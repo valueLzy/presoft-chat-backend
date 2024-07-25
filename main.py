@@ -1,15 +1,14 @@
-import asyncio
+
 import json
-from typing import List, Union
+from typing import List
 
 import uvicorn
 from fastapi import FastAPI, WebSocket
 from starlette.responses import JSONResponse
-from zhipuai import ZhipuAI
+from pydantic import BaseModel
 
-from pydantic import BaseModel, Field
-
-from glm4 import glm4_9b_chat
+from api.article_writing import get_outline
+from llm.glm4 import glm4_9b_chat
 from util.websocket_utils import ConnectionManager
 
 
@@ -26,7 +25,10 @@ def init_flask():
         username: str
         password: str
 
-    # 登录接口#####
+    class Title(BaseModel):
+        article_title: str
+
+    # 登录##############################################################
     @app.post("/login")
     def login(user: User):
         with open('user.json', 'r', encoding='utf-8') as file:
@@ -38,9 +40,7 @@ def init_flask():
             else:
                 return("用户名或密码不正确")
 
-
-
-    # 普通对话接口#####
+    # 普通对话##############################################################
     @app.websocket("/commonchat/{v1}")
     async def commonchat(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
@@ -61,6 +61,14 @@ def init_flask():
 
         except Exception as e:
             print(e)
+
+    # 生成大纲##############################################################
+    @app.post("/getarticle")
+    def getarticle(title: Title):
+        getarticle = get_outline(title.article_title, 0.7)
+        print(getarticle)
+
+
 
     return app
 
