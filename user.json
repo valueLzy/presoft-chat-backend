@@ -1,0 +1,24 @@
+[
+    {
+        "userId": 1,
+        "avatar": "",
+        "username": "admin",
+        "password": "111111",
+        "desc": "平台管理员",
+        "roles": [
+            "平台管理员"
+        ],
+        "token": "Admin Token"
+    },
+    {
+        "userId": 2,
+        "avatar": "",
+        "username": "system",
+        "password": "111111",
+        "desc": "用户1",
+        "roles": [
+            "用户"
+        ],
+        "token": "user Token"
+    }
+]
