@@ -1,4 +1,3 @@
-
 import tiktoken
 import pandas as pd
 from docx import Document
@@ -6,8 +5,8 @@ import fitz
 from langchain_text_splitters import RecursiveCharacterTextSplitter, CharacterTextSplitter
 
 from llm.embeddings import segment_document, bg3_m3, rerank
-
-from milvus.milvus_tools import get_milvus_collections_info, create_milvus, delete_milvus, insert_milvus, query_milvus,search_milvus
+from milvus.milvus_tools import get_milvus_collections_info, create_milvus, delete_milvus, insert_milvus, query_milvus, \
+    search_milvus, search_milvus_lunwen
 
 
 def text_splitter(text, length_function, separators, chunk_size, chunk_overlap):
@@ -175,6 +174,11 @@ def matching_paragraph(text, collection_name, matches_number):
     return res
 
 
+def matching_paragraph_lunwen(text, collection_name, matches_number, filter_expr):
+    res = search_milvus_lunwen(bg3_m3(text), collection_name, matches_number, filter_expr)
+    return res
+
+
 def get_paragraph(collection_name):
     paragraph_list = []
     res = query_milvus(collection_name)
@@ -186,14 +190,28 @@ def get_paragraph(collection_name):
 if __name__ == '__main__':
     # print(get_paragraph('lzy'))
     query = '''
-    板架材料为Q235钢,密度为多少
+    ファイル管理
     '''
 
-    res = matching_paragraph(query, 'damage_explosion_v1', 1000)
+    res = matching_paragraph(query, 'open_project', 1000)
     filtered_results = []
     for result in res:
         filtered_result = [res.entity.text for res in result if res.score > 0]
         filtered_results.append(filtered_result)
-    a = rerank(query,filtered_results[0])
+    a = rerank(query, filtered_results[0], 3)
     rerank_results = [y['index'] for y in a if y['relevance_score'] > 0.4]
     print(rerank_results)
+
+    # 使用以下命令创建一个 NebulaGraph（版本 3.5.0 或更新版本）集群：
+    # 选项 0 适用于使用 Docker 的机器：`curl -fsSL nebula-up.siwei.io/install.sh | bash`#
+    # 选项 1 适用于桌面版：NebulaGraph Docker 扩展 https://hub.docker.com/extensions/weygu/nebulagraph-dd-ext
+    # 如果不是使用上述方法，可以使用以下命令从 NebulaGraph 控制台创建：
+    # CREATE SPACE llamaindex(vid_type=FIXED_STRING(256), partition_num=1, replica_factor=1);
+    # :sleep 10;# USE llamaindex;
+    # CREATE TAG entity(name string);
+    # CREATE EDGE relationship(relationship string);
+    # CREATE TAG INDEX entity_index ON entity(name(256));
+    # %pip install ipython-ngql nebula3-pythonos.environ["NEBULA_USER"] = "root"os.environ["NEBULA_PASSWORD"] = "nebula"
+    # 默认为 "nebula"os.environ[    "NEBULA_ADDRESS"] = "127.0.0.1:9669"
+    # 假设已在本地安装了 NebulaGraphspace_name = "llamaindex"edge_types, rel_prop_names = ["relationship"], [    "relationship"]
+    # 默认值，如果从空的知识图谱中创建，则可以省略tags = ["entity"]  # 默认值，如果从空的知识图谱中创建，则可以省略

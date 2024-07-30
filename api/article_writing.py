@@ -1,6 +1,6 @@
-from knowledge.dataset_api import matching_paragraph
+from knowledge.dataset_api import matching_paragraph, matching_paragraph_lunwen
 from llm.embeddings import rerank
-from llm.glm4 import glm4_9b_chat, glm4_9b_chat_http
+from llm.glm4 import glm4_9b_chat_ws, glm4_9b_chat_http, deepseek_chat
 
 prompt = '''
 请你根据用户的要求，以及参考资料帮我生成一篇中文论文大纲，最后以严格的json格式返回(不要丢失括号)，不需要解释，大标题和小标题都要有序号，大标题需要用大写序号。
@@ -91,8 +91,8 @@ revise_prompt = '''
 '''
 
 
-def get_ref(query):
-    ref = matching_paragraph(query, 'damage_explosion_v1', 1000)
+def get_ref(query, filter_expr):
+    ref = matching_paragraph_lunwen(query, 'damage_explosion_v2', 1000, filter_expr)
     filtered_results = []
     for result in ref:
         filtered_result = [res.entity.text for res in result if res.score > 0]
@@ -112,13 +112,79 @@ def extract_bracket_content(s):
         return ""  # 如果找不到大括号或者顺序不正确，返回空字符串
     return s[start:end + 1]
 
-def get_outline(query, temperature):
-    rerank_filtered_result, rerank_filtered_result_file = get_ref(query)
+#标题获取大纲
+def get_outline(query, temperature, filter_expr):
+    rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr)
     messages = [
         {"content": prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)), "role": "user"}]
     ai_say = glm4_9b_chat_http(messages,temperature)
 
     return {
         'json': extract_bracket_content(ai_say),
+        'ref_file': rerank_filtered_result_file
+    }
+
+#获取摘要
+def get_summary(outline):
+    abstract = outline['摘要']
+    abstract_ref, rerank_filtered_result_file = get_ref(abstract)
+    abstract_ref_str = ''
+    for item in abstract_ref:
+        abstract_ref_str += item + "\n"
+    messages = [
+        {"content": article_prompt.replace("{{ref}}", abstract_ref_str).replace(
+            "{{outline}}", str(outline)),
+            "role": "user"}]
+    return glm4_9b_chat_ws(messages,0.7)
+
+#获取关键词
+def get_keywords(outline):
+    keywords = outline['关键词']
+    return keywords
+
+#从大纲里摘出正文
+def extract_content_from_json(json_object):
+    # 定义一个数组来存储所有部分的内容
+    all_content = []
+
+    # 定义一个函数来处理每个部分
+    def process_section(section):
+        # 提取标题和内容
+        title = section['标题']
+        content = section['内容']
+        all_content.append({"标题": title, "内容": content})
+
+        # 如果有小节，递归处理每个小节
+        if section['小节']:
+            for sub_section in section['小节']:
+                process_subsection(sub_section)
+
+    # 定义一个函数来处理每个小节
+    def process_subsection(sub_section):
+        # 提取小节标题和内容
+        sub_title = sub_section['小节标题']
+        sub_content = sub_section['内容']
+        all_content.append({"小节标题": sub_title, "内容": sub_content})
+
+    # 开始处理正文部分
+    for section in json_object['正文']:
+        process_section(section)
+
+    return all_content
+
+
+#分小节获取正文
+def get_body(outline, type):
+    abstract_ref, rerank_filtered_result_file = get_ref(type)
+    abstract_ref_str = ''
+    for item in abstract_ref:
+        abstract_ref_str += item + "\n"
+    messages = [
+        {"content": body_prompt.replace("{{ref}}", abstract_ref_str).replace(
+            "{{outline}}", str(outline)).replace("{{type}}", type),
+         "role": "user"}]
+    ai_say = deepseek_chat(1.25, messages)
+    return {
+        'ai_say': ai_say,
         'ref_file': rerank_filtered_result_file
     }

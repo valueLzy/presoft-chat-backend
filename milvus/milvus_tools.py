@@ -98,7 +98,25 @@ def search_milvus(vector, collection_name, matches_number):
         param=search_params,
         limit=matches_number,
         expr=None,
-        output_fields=['text', 'file_name', 'source'],
+        output_fields=['text'],
+    )
+    return results
+
+
+def search_milvus_lunwen(vector, collection_name, matches_number, filter_expr):
+    collection = Collection(collection_name)
+    search_params = {
+        "metric_type": "COSINE",
+        "offset": 0,
+        "ignore_growing": False
+    }
+    results = collection.search(
+        data=[vector],
+        anns_field="embeddings",
+        param=search_params,
+        limit=matches_number,
+        expr=filter_expr,
+        output_fields=['text', 'file_name'],
     )
     return results
 

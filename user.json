@@ -1,24 +1,37 @@
 [
     {
         "userId": 1,
-        "avatar": "",
         "username": "admin",
         "password": "111111",
         "desc": "平台管理员",
         "roles": [
             "平台管理员"
         ],
-        "token": "Admin Token"
+        "token": "Admin Token",
+        "menus": [
+            {"id": 1, "name": "普通对话"},
+            {"id": 2, "name": "日语修正"},
+            {"id": 3, "name": "文件对话"},
+            {"id": 4, "name": "知识库问答"},
+            {"id": 5, "name": "论文撰写"},
+            {"id": 6, "name": "知识库管理"}
+        ]
     },
     {
         "userId": 2,
-        "avatar": "",
         "username": "system",
         "password": "111111",
         "desc": "用户1",
         "roles": [
             "用户"
         ],
-        "token": "user Token"
+        "token": "user Token",
+        "menus": [
+            {"id": 1, "name": "普通对话"},
+            {"id": 2, "name": "日语修正"},
+            {"id": 3, "name": "文件对话"},
+            {"id": 4, "name": "知识库问答"},
+            {"id": 5, "name": "论文撰写"}
+        ]
     }
 ]
