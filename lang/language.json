@@ -1,0 +1,179 @@
+{
+  "version": {
+    "zh": "version：v1.0.0",
+    "ja": "現在のバージョン：v1.0.0"
+  },
+  "dialogue": {
+    "zh": "对话",
+    "ja": "チャット"
+  },
+    "knowledge": {
+    "zh": "知识库管理",
+    "ja": "ナレッジベース管理"
+  },
+  "getarticle": {
+    "zh": "论文撰写",
+    "ja": "論文の作成"
+  },
+    "conversation": {
+    "zh": "会话：",
+    "ja": "モード："
+  },
+    "conversation_a": {
+    "zh": "普通对话",
+    "ja": "LLMチャット"
+  },
+    "conversation_b": {
+    "zh": "日本语修正助手",
+    "ja": "日本語修正アシスタント"
+  },
+    "conversation_c": {
+    "zh": "文件对话",
+    "ja": "ドキュメントGPT"
+  },
+    "conversation_d": {
+    "zh": "知识库对话",
+    "ja": "社内ナレッジ(RAG)"
+  },
+  "conversation_e": {
+    "zh": "测试用例生成",
+    "ja": "テストケース生成"
+  },
+    "history_number": {
+    "zh": "历史记录最大次数：",
+    "ja": "歷史会話最大回数："
+  },
+    "session_switching_prompts": {
+    "zh": " 模式已切换",
+    "ja": " モードに切り替わりました"
+  },
+    "knowledge_switching_prompts": {
+    "zh": " 当前的知识库：",
+    "ja": " 現在のナレッジベース："
+  },
+    "modify_prompt": {
+      "zh": "**注意:**\n- **Excel**:单元格处理\n- **TXT**:用空行分隔处理\n- **Word**:需要修改的文本显示为红色",
+      "ja": "**デフォルト：**\n- **Excel**：セル単位で処理する\n- **TXT**：空行区切りで処理する\n- **Word**：修正が必要なテキストは赤で表示する"
+    },
+  "writing_prompt": {
+      "zh": "**请在对话框里输入你的论文题目**\n",
+      "ja": "**文章のみだしか文章の大綱のどちらかを入力してください**\n"
+    },
+    "b_expander": {
+    "zh": "文件",
+    "ja": "ファイル"
+  },
+    "b_correction_button": {
+    "zh": "修正",
+    "ja": "ワンクリックで修正"
+  },
+    "b_upload": {
+    "zh": "upload",
+    "ja": "アップロード"
+  },
+    "conversation_prompts": {
+    "zh": "输入对话内容，换行Shift+Enter",
+    "ja": "会話内容を入力し、改行はShift+Enterでお願いします"
+  },
+    "ai_say": {
+    "zh": "正在思考...",
+    "ja": "考えています..."
+  },
+  "ai_find": {
+    "zh": "正在查找资料...",
+    "ja": "書類を照会中 ..."
+  },
+
+    "b_download": {
+    "zh": "下载新文件",
+    "ja": "ファイルをダウンロード"
+  },
+  "d_databaselist": {
+    "zh": "请选择知识库",
+    "ja": "ナレッジベースを選択します："
+  },
+  "d_number": {
+    "zh": "匹配知识条数：",
+    "ja": "マッチング知識項目数："
+  },
+  "d_threshold": {
+    "zh": "知识匹配分数阈值：",
+    "ja": "知識マッチングの閾値："
+  },
+    "knowledge_create": {
+    "zh": "新建知识库",
+    "ja": "新規作成"
+  },
+    "knowledge_create_selete": {
+    "zh": "选择或新建知识库：",
+    "ja": "ナレッジベースの選択または新規作成："
+  },
+    "knowledge_create_name": {
+    "zh": "新建知识库名称",
+    "ja": "新規作成名称"
+  },
+    "knowledge_create_placeholder": {
+    "zh": "新知识库名称，不支持中文名称",
+    "ja": "新しいナレッジベースの名前、中国語の名前をサポートしません"
+  },
+    "knowledge_text_input": {
+    "zh": "知识库的概要",
+    "ja": "ナレッジベースの概要"
+  },
+    "knowledge_text_input_placeholder": {
+    "zh": "这是一个知识库的简介",
+    "ja": "エージェントの検索を容易にするナレッジベースのプロフィールです"
+  },
+    "knowledge_submit_create_kb": {
+    "zh": "知识库的名字不能是空的",
+    "ja": "ナレッジベース名は空ではいけません"
+  },
+    "knowledge_submit_create_kb_name_error": {
+    "zh": " 知识库的名字已存在！",
+    "ja": " というナレッジベースは既に存在しています！"
+  },
+    "knowledge_introduce": {
+    "zh": "知识库的介绍:",
+    "ja": "ナレッジベースの紹介:"
+  },
+    "knowledge_introduce_upload": {
+    "zh": "上传文件：",
+    "ja": " ファイルをアップロード："
+  },
+    "knowledge_addition_button": {
+    "zh": "向知识库添加文件",
+    "ja": "ナレッジベースにファイルを追加"
+  },
+    "knowledge_info_a": {
+    "zh": "知识库`",
+    "ja": "ナレッジベース`"
+  },
+    "knowledge_info_b": {
+    "zh": "`还没有文件",
+    "ja": "`にはまだファイルがありません"
+  },
+    "knowledge_info_c": {
+    "zh": "请双击列表中的内容进行修改！",
+    "ja": "リストの内容をダブルクリックして修正をお願いします。"
+  },
+    "knowledge_save_button": {
+    "zh": "修改并保存",
+    "ja": "変更を保存します"
+  },
+    "knowledge_del_button": {
+    "zh": "删除知识库",
+    "ja": "ナレッジベースを削除します"
+  },
+    "tab1_segmentation": {
+    "zh": "分割结果",
+    "ja": "分割結果"
+  },
+    "tab2_outline": {
+    "zh": "大纲",
+    "ja": "アウトライン"
+  },
+    "tab3_graph": {
+    "zh": "知识图谱",
+    "ja": "知識マップ"
+  }
+}
