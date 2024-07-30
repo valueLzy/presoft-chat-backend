@@ -1,13 +1,20 @@
 from db.db import execute_query
 
 
-def get_user_with_menus(username, password):
+def get_user_with_menus(username, password, language):
     query = """
     SELECT 
         u.userId, 
         u.userName, 
         u.roles, 
-        GROUP_CONCAT(m.name ORDER BY m.id SEPARATOR '，') as menuNames, 
+        GROUP_CONCAT(
+            CASE 
+                WHEN %s = 'zh' THEN m.zh_name 
+                WHEN %s = 'ja' THEN m.ja_name 
+                ELSE m.zh_name  -- 默认使用 zh_name 或者根据实际需求选择
+            END 
+            ORDER BY m.id SEPARATOR '，'
+        ) as menuNames, 
         u.desc, 
         u.password
     FROM 
@@ -24,7 +31,7 @@ def get_user_with_menus(username, password):
         u.desc, 
         u.password;
     """
-    params = (username, password)
+    params = (language, language, username, password)
     return execute_query(query, params)
 
 

@@ -25,7 +25,12 @@ def init_flask():
         history: List[dict[str, str]]
         temperature: float
 
-    class User(BaseModel):
+    class UserLogin(BaseModel):
+        username: str
+        password: str
+        language: str
+
+    class UserEnroll(BaseModel):
         username: str
         password: str
 
@@ -38,9 +43,9 @@ def init_flask():
 
     # 登录##############################################################
     @app.post("/login")
-    def login(user: User):
+    def login(user: UserLogin):
         # 获取用户及其菜单信息
-        user_info = get_user_with_menus(user.username, md5_encrypt(user.password))
+        user_info = get_user_with_menus(user.username, md5_encrypt(user.password), user.language)
 
         if not user_info:
             return JSONResponse(status_code=404, content={"message": "用户名或密码不存在"})
@@ -62,7 +67,7 @@ def init_flask():
         })
 
     @app.post("/enroll")
-    def enroll(user: User):
+    def enroll(user: UserEnroll):
         # 获取用户及密码
         user_name = user.username
         user_password = md5_encrypt(user.password)
