@@ -3,9 +3,9 @@ import pymysql
 # 数据库配置
 db_config = {
     'host': '192.168.1.21',
-    'user': 'your_username',  # 这里填写你的MySQL用户名
+    'user': 'root',
     'password': '123456',
-    'database': 'your_database_name',  # 这里填写你的数据库名
+    'database': 'persoft',
     'port': 3307
 }
 
@@ -30,29 +30,3 @@ def execute_query(query, params=None):
         finally:
             connection.close()
     return None
-
-def get_user_with_menus(username, password):
-    query = """
-    SELECT 
-        u.userId, 
-        u.userName, 
-        u.roles, 
-        GROUP_CONCAT(m.name ORDER BY m.id SEPARATOR '，') as menuNames, 
-        u.desc, 
-        u.password
-    FROM 
-        user u
-    LEFT JOIN 
-        menu m ON FIND_IN_SET(m.id, u.menus)
-    WHERE 
-        u.userName = %s AND 
-        u.password = %s
-    GROUP BY 
-        u.userId, 
-        u.userName, 
-        u.roles, 
-        u.desc, 
-        u.password;
-    """
-    params = (username, password)
-    return execute_query(query, params)

@@ -8,7 +8,8 @@ from starlette.responses import JSONResponse
 from pydantic import BaseModel
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body
-from db.db import get_user_with_menus
+from db.sql import get_user_with_menus
+
 from llm.glm4 import glm4_9b_chat_ws
 from util.websocket_utils import ConnectionManager
 
@@ -40,20 +41,20 @@ def init_flask():
         user_info = get_user_with_menus(user.username, user.password)
 
         if not user_info:
-            return JSONResponse(status_code=404, content={"message": "用户名或密码错误"})
+            return JSONResponse(status_code=404, content={"message": "用户名或密码不存在"})
 
         # 假设返回的用户信息是列表形式，并且列表中只有一个元素
         user_data = user_info[0]
 
         # 将菜单名称从字符串转换为列表
-        menu_names = user_data[3].split('，')
+        menu_names = user_data[3].split(',')
 
         # 构建返回的数据结构
         return JSONResponse(content={
             "userId": user_data[0],
             "userName": user_data[1],
             "roles": user_data[2],
-            "menuName": menu_names,  # 菜单名称列表
+            "menuName": menu_names,
             "desc": user_data[4],
             "password": user_data[5]
         })
