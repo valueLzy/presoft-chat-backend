@@ -30,7 +30,7 @@ def init_flask():
         password: str
         language: str
 
-    class UserEnroll(BaseModel):
+    class UserRegister(BaseModel):
         username: str
         password: str
 
@@ -59,6 +59,7 @@ def init_flask():
         # 构建返回的数据结构
         return JSONResponse(content={
             "userId": user_data[0],
+            
             "userName": user_data[1],
             "roles": user_data[2],
             "menuName": menu_names,
@@ -66,8 +67,8 @@ def init_flask():
             "password": user_data[5]
         })
 
-    @app.post("/enroll")
-    def enroll(user: UserEnroll):
+    @app.post("/register")
+    def register(user: UserRegister):
         # 获取用户及密码
         user_name = user.username
         user_password = md5_encrypt(user.password)
