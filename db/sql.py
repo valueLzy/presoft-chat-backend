@@ -49,7 +49,7 @@ def check_username_exists(username):
     return result[0][0] > 0 if result else False
 
 
-def insert_user(user_id, username, roles, menus, desc, password):
+def insert_user(user_id, username, roles, menus, desc, password, company, nationality):
     query = """
     INSERT INTO `user` (
         `userId`, 
@@ -57,8 +57,12 @@ def insert_user(user_id, username, roles, menus, desc, password):
         `roles`, 
         `menus`, 
         `desc`, 
-        `password`
+        `password`,
+        `company`,
+        `nationality`
     ) VALUES (
+        %s, 
+        %s, 
         %s, 
         %s, 
         %s, 
@@ -67,5 +71,5 @@ def insert_user(user_id, username, roles, menus, desc, password):
         %s
     );
     """
-    params = (user_id, username, roles, menus, desc, password)
+    params = (user_id, username, roles, menus, desc, password, company, nationality)
     return execute_query(query, params)

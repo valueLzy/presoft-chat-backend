@@ -33,6 +33,8 @@ def init_flask():
     class UserRegister(BaseModel):
         username: str
         password: str
+        company: str
+        nationality: str
 
     class Basic(BaseModel):
         article_title: str
@@ -76,7 +78,7 @@ def init_flask():
         if check_username_exists(user_name):
             return JSONResponse(status_code=501, content={"message": "用户名存在"})
         else:
-            insert_user(str(uuid.uuid4()), user_name, '用户', '1,2,3,4,5', '', md5_encrypt(user_password))
+            insert_user(str(uuid.uuid4()), user_name, '用户', '1,2,3,4,5', '', user_password, user.company, user.nationality)
             return JSONResponse(status_code=200, content={"message": "success"})
 
     # 普通对话##############################################################
