@@ -1,14 +1,15 @@
-import hashlib
+from passlib.context import CryptContext
+
+password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def md5_encrypt(password):
-    # 创建一个md5哈希对象
-    md5 = hashlib.md5()
+def get_hashed_password(password: str) -> str:
+    return password_context.hash(password)
 
-    # 更新哈希对象以包含密码的二进制数据
-    md5.update(password.encode('utf-8'))
 
-    # 获取加密后的十六进制表示
-    encrypted_password = md5.hexdigest()
+def verify_password(password: str, hashed_pass: str) -> bool:
+    return password_context.verify(password, hashed_pass)
 
-    return encrypted_password
+
+if __name__ == '__main__':
+    print(get_hashed_password('123456'))
