@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from typing import List, Dict, Any
@@ -7,7 +8,8 @@ from fastapi import FastAPI, WebSocket
 from starlette.responses import JSONResponse
 from pydantic import BaseModel
 
-from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body
+from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
+    list_to_query
 from db.sql import get_user_with_menus, check_username_exists, insert_user
 
 from llm.glm4 import glm4_9b_chat_ws
@@ -42,6 +44,8 @@ def init_flask():
 
     class Article(BaseModel):
         article_base: Dict[str, Any]
+        article_choices: list
+
 
     # 登录##############################################################
     @app.post("/login")
@@ -117,32 +121,72 @@ def init_flask():
         return get_outline(basic.article_title, 0.7, basic.article_base)
 
     # 论文---生成论文##############################################################
-    # @app.websocket("/getarticle")
-    # async def commonchat(websocket: WebSocket, v1: str):
-    #     manager = ConnectionManager()
-    #     await manager.connect(websocket)
-    #     try:
-    #         data = await websocket.receive_text()
-    #         params = Article.parse_raw(data)
-    #         article_base = params.article_base
-    #         #摘要
-    #         summary = get_summary(article_base)
-    #         for chunk in summary:
-    #             await manager.send_personal_message(json.dumps({
-    #                 "summary": chunk.choices[0].delta.content
-    #             }, ensure_ascii=False), websocket)
-    #         #关键字
-    #         keywords = get_keywords(article_base)
-    #         await manager.send_personal_message(json.dumps({
-    #             "keywords": keywords
-    #         }, ensure_ascii=False), websocket)
-    #         # 正文
-    #
-    #
-    #
-    #     except Exception as e:
-    #         print(e)
-    #
+    @app.websocket("/getarticle/{v1}")
+    async def commonchat(websocket: WebSocket, v1: str):
+        manager = ConnectionManager()
+        await manager.connect(websocket)
+        try:
+            data = await websocket.receive_text()
+            params = Article.parse_raw(data)
+            article_base = params.article_base
+            article_choices = params.article_choices
+            ref_file = []
+            #摘要
+            summary = get_summary(article_base,list_to_query(article_choices))
+            for chunk in summary["ai_say"]:
+                await manager.send_personal_message(json.dumps({
+                    "summary": chunk.choices[0].delta.content
+                }, ensure_ascii=False), websocket)
+                await asyncio.sleep(0.01)
+            #关键字
+            keywords = get_keywords(article_base)
+            await manager.send_personal_message(json.dumps({
+                "keywords": keywords
+            }, ensure_ascii=False), websocket)
+            await asyncio.sleep(0.01)
+            # 正文
+            json_list = extract_content_from_json(article_base)
+            for index, item in enumerate(json_list):
+                if '标题' in item and index != len(json_list) - 1:
+                    await manager.send_personal_message(json.dumps({
+                        "biaoti": item['标题']
+                    }, ensure_ascii=False), websocket)
+                    await asyncio.sleep(0.01)
+                elif '小节标题' in item:
+                    await manager.send_personal_message(json.dumps({
+                        "xiaojiebiaoti": item['标题']
+                    }, ensure_ascii=False), websocket)
+                    await asyncio.sleep(0.01)
+                    body = get_body(article_base, str(item), list_to_query(article_choices))
+                    if body['ref_file']:
+                        for x in body['ref_file']:
+                            ref_file.append(x)
+                    await manager.send_personal_message(json.dumps({
+                        "xiaojieneirong": body['ai_say']
+                    }, ensure_ascii=False), websocket)
+                    await asyncio.sleep(0.01)
+                elif '标题' in item and index == len(json_list) - 1:
+                    await manager.send_personal_message(json.dumps({
+                        "xiaojiebiaoti": item['标题']
+                    }, ensure_ascii=False), websocket)
+                    await asyncio.sleep(0.01)
+                    body = get_body(article_base ,str(item), list_to_query(article_choices))
+                    await manager.send_personal_message(json.dumps({
+                        "xiaojieneirong": body['ai_say']
+                    }, ensure_ascii=False), websocket)
+                    await asyncio.sleep(0.01)
+                    if body['ref_file']:
+                        for x in body['ref_file']:
+                            ref_file.append(x)
+            # 引用
+            await manager.send_personal_message(json.dumps({
+                "yinyong": ref_file
+            }, ensure_ascii=False), websocket)
+            await asyncio.sleep(0.01)
+
+        except Exception as e:
+            print(e)
+
 
     return app
 

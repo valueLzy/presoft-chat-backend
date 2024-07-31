@@ -105,6 +105,7 @@ def get_ref(query, filter_expr):
         rerank_filtered_result_text.append(ref[0][index].fields['text'] + '\n')
         rerank_filtered_result_file.append(ref[0][index].fields['file_name'])
     return rerank_filtered_result_text, set(rerank_filtered_result_file)
+
 def extract_bracket_content(s):
     start = s.find('{')
     end = s.rfind('}')
@@ -125,9 +126,9 @@ def get_outline(query, temperature, filter_expr):
     }
 
 #获取摘要
-def get_summary(outline):
+def get_summary(outline, filter_expr):
     abstract = outline['摘要']
-    abstract_ref, rerank_filtered_result_file = get_ref(abstract)
+    abstract_ref, rerank_filtered_result_file = get_ref(abstract, filter_expr)
     abstract_ref_str = ''
     for item in abstract_ref:
         abstract_ref_str += item + "\n"
@@ -135,7 +136,11 @@ def get_summary(outline):
         {"content": article_prompt.replace("{{ref}}", abstract_ref_str).replace(
             "{{outline}}", str(outline)),
             "role": "user"}]
-    return glm4_9b_chat_ws(messages,0.7)
+    ai_say = glm4_9b_chat_ws(messages,0.7)
+    return {
+        'ai_say': ai_say,
+        'ref_file': rerank_filtered_result_file
+    }
 
 #获取关键词
 def get_keywords(outline):
@@ -174,8 +179,8 @@ def extract_content_from_json(json_object):
 
 
 #分小节获取正文
-def get_body(outline, type):
-    abstract_ref, rerank_filtered_result_file = get_ref(type)
+def get_body(outline, type, filter_expr):
+    abstract_ref, rerank_filtered_result_file = get_ref(type, filter_expr)
     abstract_ref_str = ''
     for item in abstract_ref:
         abstract_ref_str += item + "\n"
@@ -188,3 +193,6 @@ def get_body(outline, type):
         'ai_say': ai_say,
         'ref_file': rerank_filtered_result_file
     }
+def list_to_query(lst):
+    query = ' or '.join([f"type == '{item}'" for item in lst])
+    return query
