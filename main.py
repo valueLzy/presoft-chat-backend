@@ -1,12 +1,10 @@
 import asyncio
 import json
 import uuid
-from typing import List, Dict, Any
 
 import uvicorn
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, UploadFile, File, Form
 from starlette.responses import JSONResponse
-from pydantic import BaseModel
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
     list_to_query, revise_article
@@ -15,40 +13,12 @@ from db.sql import get_user_with_menus, check_username_exists, insert_user
 from llm.glm4 import glm4_9b_chat_ws
 from util.websocket_utils import ConnectionManager
 from utils import get_hashed_password
-
+from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit
 
 # 普通对话接口#####
 
 def init_flask():
     app = FastAPI()
-
-    class Question(BaseModel):
-        prompt: str
-        history: List[dict[str, str]]
-        temperature: float
-
-    class UserLogin(BaseModel):
-        username: str
-        password: str
-        language: str
-
-    class UserRegister(BaseModel):
-        username: str
-        password: str
-        company: str
-        nationality: str
-
-    class Basic(BaseModel):
-        article_title: str
-        article_base: list
-
-    class Article(BaseModel):
-        article_base: Dict[str, Any]
-        article_choices: list
-
-    class Edit(BaseModel):
-        oldpart: str
-        prompt: str
 
     # 登录##############################################################
     @app.post("/login")
@@ -206,6 +176,23 @@ def init_flask():
 
         except Exception as e:
             print(e)
+
+    # 日语修正##############################################################
+    @app.post("/correctJa")
+    async def correctJa(file: UploadFile = File(None), prompt: str = Form(None)):
+        if file:
+            return JSONResponse(content={"message": "收到文件"})
+        elif prompt:
+            return JSONResponse(content={"message": "收到"})
+        else:
+            return JSONResponse(content={"message": "没有收到文件或prompt"})
+
+
+
+
+
+
+
 
     return app
 
