@@ -38,5 +38,17 @@ def download_file(bucket_name: str, file_name: str) -> str:
         return ""
 
 
+def put_file(bucket_name: str, file_name: str, file_path: str) -> bool:
+    try:
+        minio_client.fput_object(
+            bucket_name=bucket_name,
+            object_name=file_name,
+            file_path=file_path,
+        )
+        return True
+    except Exception as e:
+        return False
+
+
 if __name__ == '__main__':
-    print(download_file("vue-file","text2.xlsx"))
+    print(put_file("vue-file", "aaaa.xlsx", "data/aaaa.xlsx"))
