@@ -48,7 +48,7 @@ def deepseek_chat(temperature, messages):
     response = client.chat.completions.create(
         model="deepseek-chat",
         messages=messages,
-        stream=False,
+        stream=True,
         temperature=temperature,
     )
-    return response.choices[0].message.content
+    return response

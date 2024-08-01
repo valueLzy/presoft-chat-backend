@@ -9,7 +9,7 @@ from starlette.responses import JSONResponse
 from pydantic import BaseModel
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
-    list_to_query
+    list_to_query, revise_article
 from db.sql import get_user_with_menus, check_username_exists, insert_user
 
 from llm.glm4 import glm4_9b_chat_ws
@@ -46,6 +46,9 @@ def init_flask():
         article_base: Dict[str, Any]
         article_choices: list
 
+    class Edit(BaseModel):
+        oldpart: str
+        prompt: str
 
     # 登录##############################################################
     @app.post("/login")
@@ -65,7 +68,6 @@ def init_flask():
         # 构建返回的数据结构
         return JSONResponse(content={
             "userId": user_data[0],
-            
             "userName": user_data[1],
             "roles": user_data[2],
             "menuName": menu_names,
@@ -137,44 +139,40 @@ def init_flask():
                 await manager.send_personal_message(json.dumps({
                     "summary": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
-                await asyncio.sleep(0.01)
             #关键字
             keywords = get_keywords(article_base)
             await manager.send_personal_message(json.dumps({
                 "keywords": keywords
             }, ensure_ascii=False), websocket)
-            await asyncio.sleep(0.01)
             # 正文
             json_list = extract_content_from_json(article_base)
             for index, item in enumerate(json_list):
+                print(index,item)
                 if '标题' in item and index != len(json_list) - 1:
                     await manager.send_personal_message(json.dumps({
                         "biaoti": item['标题']
                     }, ensure_ascii=False), websocket)
-                    await asyncio.sleep(0.01)
                 elif '小节标题' in item:
                     await manager.send_personal_message(json.dumps({
-                        "xiaojiebiaoti": item['标题']
+                        "xiaojiebiaoti": item['小节标题']
                     }, ensure_ascii=False), websocket)
-                    await asyncio.sleep(0.01)
                     body = get_body(article_base, str(item), list_to_query(article_choices))
                     if body['ref_file']:
                         for x in body['ref_file']:
                             ref_file.append(x)
-                    await manager.send_personal_message(json.dumps({
-                        "xiaojieneirong": body['ai_say']
-                    }, ensure_ascii=False), websocket)
-                    await asyncio.sleep(0.01)
+                    for chunk in body['ai_say']:
+                        await manager.send_personal_message(json.dumps({
+                            "xiaojieneirong": chunk.choices[0].delta.content
+                        }, ensure_ascii=False), websocket)
                 elif '标题' in item and index == len(json_list) - 1:
                     await manager.send_personal_message(json.dumps({
                         "xiaojiebiaoti": item['标题']
                     }, ensure_ascii=False), websocket)
-                    await asyncio.sleep(0.01)
                     body = get_body(article_base ,str(item), list_to_query(article_choices))
-                    await manager.send_personal_message(json.dumps({
-                        "xiaojieneirong": body['ai_say']
-                    }, ensure_ascii=False), websocket)
-                    await asyncio.sleep(0.01)
+                    for chunk in body['ai_say']:
+                        await manager.send_personal_message(json.dumps({
+                            "xiaojieneirong": chunk.choices[0].delta.content
+                        }, ensure_ascii=False), websocket)
                     if body['ref_file']:
                         for x in body['ref_file']:
                             ref_file.append(x)
@@ -182,11 +180,32 @@ def init_flask():
             await manager.send_personal_message(json.dumps({
                 "yinyong": ref_file
             }, ensure_ascii=False), websocket)
-            await asyncio.sleep(0.01)
 
         except Exception as e:
             print(e)
 
+    # 论文---修改章节##############################################################
+    @app.websocket("/editarticle/{v1}")
+    async def editarticle(websocket: WebSocket, v1: str):
+        manager = ConnectionManager()
+        await manager.connect(websocket)
+        try:
+            data = await websocket.receive_text()
+            params = Edit.parse_raw(data)
+            oldpart = params.oldpart
+            prompt = params.prompt
+            # content = get_value_if_key_in_dicts(article_base, chapter)
+            # if content == '':
+            #     return JSONResponse(status_code=404, content={"message": "您输入的标题不存在，请检查后重新输入"})
+            # else:
+            revise_text = revise_article(oldpart, prompt)
+            for chunk in revise_text:
+                await manager.send_personal_message(json.dumps({
+                    "newpart": chunk.choices[0].delta.content
+                }, ensure_ascii=False), websocket)
+
+        except Exception as e:
+            print(e)
 
     return app
 

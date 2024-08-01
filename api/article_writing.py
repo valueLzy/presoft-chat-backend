@@ -196,3 +196,25 @@ def get_body(outline, type, filter_expr):
 def list_to_query(lst):
     query = ' or '.join([f"type == '{item}'" for item in lst])
     return query
+
+# #修改论文-检查是否存在
+# def get_value_if_key_in_dicts(array_of_dicts, key_to_check):
+#     """
+#     判断一个字符串是否是数组中任意一个字典的键，如果是则返回该字典中对应的值，否则返回空字符串
+#
+#     :param array_of_dicts: 包含字典的数组
+#     :param key_to_check: 需要检查的字符串
+#     :return: 如果字符串是任意一个字典的键，返回对应的值；否则返回空字符串
+#     """
+#     for dictionary in array_of_dicts:
+#         if key_to_check in dictionary:
+#             return dictionary[key_to_check]
+#     return ""
+
+#修改论文-修改片段
+def revise_article(content, query):
+    messages = [{"content": revise_prompt.replace("{{query}}", query).replace(
+        "{{content}}", content), "role": "user"}]
+    ai_say = deepseek_chat(1.25, messages)
+    return ai_say
+

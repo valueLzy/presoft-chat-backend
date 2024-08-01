@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 from fastapi import WebSocket
 
@@ -21,6 +22,8 @@ class ConnectionManager:
     async def send_personal_message(message: str, ws: WebSocket):
         # 发送个人消息
         await ws.send_text(message)
+        await asyncio.sleep(0.01)
+
 
     async def broadcast(self, message: str):
         # 广播消息
