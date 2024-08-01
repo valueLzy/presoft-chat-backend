@@ -12,7 +12,7 @@ from db.sql import get_user_with_menus, check_username_exists, insert_user
 
 from llm.glm4 import glm4_9b_chat_ws
 from util.websocket_utils import ConnectionManager
-from utils import get_hashed_password
+from utils import md5_encrypt
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit
 
 # 普通对话接口#####
@@ -24,7 +24,7 @@ def init_flask():
     @app.post("/login")
     def login(user: UserLogin):
         # 获取用户及其菜单信息
-        user_info = get_user_with_menus(user.username, get_hashed_password(user.password), user.language)
+        user_info = get_user_with_menus(user.username, md5_encrypt(user.password), user.language)
 
         if not user_info:
             return JSONResponse(status_code=404, content={"message": "用户名或密码不存在"})
@@ -49,7 +49,7 @@ def init_flask():
     def register(user: UserRegister):
         # 获取用户及密码
         user_name = user.username
-        user_password = get_hashed_password(user.password)
+        user_password = md5_encrypt(user.password)
         # 判断用户名是否存在
         if check_username_exists(user_name):
             return JSONResponse(status_code=501, content={"message": "用户名存在"})

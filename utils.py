@@ -1,3 +1,4 @@
+import hashlib
 import os
 import uuid
 
@@ -14,12 +15,17 @@ minio_client = Minio(
 )
 
 
-def get_hashed_password(password: str) -> str:
-    return password_context.hash(password)
+def md5_encrypt(password):
+    # 创建一个md5哈希对象
+    md5 = hashlib.md5()
 
+    # 更新哈希对象以包含密码的二进制数据
+    md5.update(password.encode('utf-8'))
 
-def verify_password(password: str, hashed_pass: str) -> bool:
-    return password_context.verify(password, hashed_pass)
+    # 获取加密后的十六进制表示
+    encrypted_password = md5.hexdigest()
+
+    return encrypted_password
 
 
 def download_file(bucket_name: str, file_name: str) -> str:
@@ -51,4 +57,4 @@ def put_file(bucket_name: str, file_name: str, file_path: str) -> bool:
 
 
 if __name__ == '__main__':
-    print(put_file("vue-file", "aaaa.xlsx", "data/aaaa.xlsx"))
+    print(get_hashed_password("123456"))
