@@ -8,17 +8,18 @@ from starlette.responses import JSONResponse
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
     list_to_query, revise_article
-from api.problem_shunts import del_japanese_file
 from db.sql import get_user_with_menus, check_username_exists, insert_user
 
 from llm.glm4 import glm4_9b_chat_ws
 from util.websocket_utils import ConnectionManager
-from utils import get_hashed_password, download_file
-from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit,  Correct
+from utils import get_hashed_password
+from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit
 
+# 普通对话接口#####
 
 def init_flask():
     app = FastAPI()
+
     # 登录##############################################################
     @app.post("/login")
     def login(user: UserLogin):
@@ -163,6 +164,10 @@ def init_flask():
             params = Edit.parse_raw(data)
             oldpart = params.oldpart
             prompt = params.prompt
+            # content = get_value_if_key_in_dicts(article_base, chapter)
+            # if content == '':
+            #     return JSONResponse(status_code=404, content={"message": "您输入的标题不存在，请检查后重新输入"})
+            # else:
             revise_text = revise_article(oldpart, prompt)
             for chunk in revise_text:
                 await manager.send_personal_message(json.dumps({
@@ -173,21 +178,14 @@ def init_flask():
             print(e)
 
     # 日语修正##############################################################
-    @app.websocket("/correctJa/{v1}")
-    async def correctJa(websocket: WebSocket, v1: str):
-        manager = ConnectionManager()
-        await manager.connect(websocket)
-        try:
-            data = await websocket.receive_text()
-            params = Correct.parse_raw(data)
-            bucket_name = params.bucket_name
-            object_name = params.object_name
-            file_path = download_file(bucket_name, object_name)
-            generator = del_japanese_file(websocket, file_path)
-            return generator
-
-        except Exception as e:
-            print(e)
+    @app.post("/correctJa")
+    async def correctJa(file: UploadFile = File(None), prompt: str = Form(None)):
+        if file:
+            return JSONResponse(content={"message": "收到文件"})
+        elif prompt:
+            return JSONResponse(content={"message": "收到"})
+        else:
+            return JSONResponse(content={"message": "没有收到文件或prompt"})
 
 
 

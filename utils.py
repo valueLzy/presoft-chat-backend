@@ -51,5 +51,4 @@ def put_file(bucket_name: str, file_name: str, file_path: str) -> bool:
 
 
 if __name__ == '__main__':
-    # print(put_file("vue-file", "test.xlsx", "data/test.xlsx"))
-    print(download_file("vue-file", "test.xlsx"))
+    print(put_file("vue-file", "aaaa.xlsx", "data/aaaa.xlsx"))
