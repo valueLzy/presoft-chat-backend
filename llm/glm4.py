@@ -1,10 +1,12 @@
 import requests
 from openai import OpenAI
 from zhipuai import ZhipuAI
+
 apikey = "e479f5521d65e3c5d358341a6e2f6c0e.Ci18igbfpxoyuhHp"
 
+
 #流式返回用这个######################################
-def glm4_9b_chat_ws(history,temperature):
+def glm4_9b_chat_ws(history, temperature):
     client = ZhipuAI(api_key=apikey)
 
     history.insert(0, {"role": "system",
@@ -21,7 +23,9 @@ def glm4_9b_chat_ws(history,temperature):
 
 #http请求走这个######################################
 url = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-def glm4_9b_chat_http(messages,temperature):
+
+
+def glm4_9b_chat_http(messages, temperature):
     # 定义请求体
     headers = {
         "Authorization": f"Bearer e479f5521d65e3c5d358341a6e2f6c0e.Ci18igbfpxoyuhHp"

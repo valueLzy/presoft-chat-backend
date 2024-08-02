@@ -1,9 +1,13 @@
 import asyncio
 import json
+import os
+import shutil
 import uuid
 
+import openpyxl
 import uvicorn
 from fastapi import FastAPI, WebSocket, UploadFile, File, Form
+from openpyxl.utils import get_column_letter
 from starlette.responses import JSONResponse
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
@@ -11,10 +15,12 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
 from db.sql import get_user_with_menus, check_username_exists, insert_user
 
 from llm.glm4 import glm4_9b_chat_ws
+from prompts import del_japanese_prompt
 from util.websocket_utils import ConnectionManager
-from utils import get_hashed_password,download_file,put_file
-from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit,Correct
-from api.problem_shunts import  del_japanese_file
+from utils import get_hashed_password, download_file, put_file, has_japanese
+from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, Correct
+
+
 # 普通对话接口#####
 
 def init_flask():
@@ -54,7 +60,8 @@ def init_flask():
         if check_username_exists(user_name):
             return JSONResponse(status_code=501, content={"message": "用户名存在"})
         else:
-            insert_user(str(uuid.uuid4()), user_name, '用户', '1,2,3,4,5', '', user_password, user.company, user.nationality)
+            insert_user(str(uuid.uuid4()), user_name, '用户', '1,2,3,4,5', '', user_password, user.company,
+                        user.nationality)
             return JSONResponse(status_code=200, content={"message": "success"})
 
     # 普通对话##############################################################
@@ -104,7 +111,7 @@ def init_flask():
             article_choices = params.article_choices
             ref_file = []
             #摘要
-            summary = get_summary(article_base,list_to_query(article_choices))
+            summary = get_summary(article_base, list_to_query(article_choices))
             for chunk in summary["ai_say"]:
                 await manager.send_personal_message(json.dumps({
                     "summary": chunk.choices[0].delta.content
@@ -117,7 +124,7 @@ def init_flask():
             # 正文
             json_list = extract_content_from_json(article_base)
             for index, item in enumerate(json_list):
-                print(index,item)
+                print(index, item)
                 if '标题' in item and index != len(json_list) - 1:
                     await manager.send_personal_message(json.dumps({
                         "biaoti": item['标题']
@@ -138,7 +145,7 @@ def init_flask():
                     await manager.send_personal_message(json.dumps({
                         "xiaojiebiaoti": item['标题']
                     }, ensure_ascii=False), websocket)
-                    body = get_body(article_base ,str(item), list_to_query(article_choices))
+                    body = get_body(article_base, str(item), list_to_query(article_choices))
                     for chunk in body['ai_say']:
                         await manager.send_personal_message(json.dumps({
                             "xiaojieneirong": chunk.choices[0].delta.content
@@ -183,19 +190,48 @@ def init_flask():
             params = Correct.parse_raw(data)
             bucket_name = params.bucket_name
             object_name = params.object_name
-            file_path = download_file(bucket_name, object_name)
-            generator = del_japanese_file(websocket, file_path)
-            return generator
+            download_file_res = download_file(bucket_name, object_name)
+            file_path = download_file_res['file_path']
+            file_dir = download_file_res['file_dir']
+            file_type = object_name.split('.')[1]
+            new_file_path = file_path.replace(object_name, 'new_' + object_name)
+            if file_type == 'xlsx' or file_type == 'xls':
+                # 加载工作簿和工作表
+                workbook = openpyxl.load_workbook(file_path)
 
+                for sheet in workbook.sheetnames:
+                    worksheet = workbook[sheet]
+                    processed = False
+
+                    # 遍历每个单元格
+                    for row in worksheet.iter_rows(min_row=1, max_col=worksheet.max_column, max_row=worksheet.max_row):
+                        for cell in row:
+                            if isinstance(cell.value, str) and has_japanese(cell.value):
+                                # 处理日文内容
+                                new_value = del_japanese_prompt(0.1, cell.value, [])
+                                processed = True
+                                cell_value = str(cell.value).replace("\n", "")
+                                new_cell_value = str(new_value).replace("\n", "")
+                                await manager.send_personal_message(json.dumps({
+                                    "content": f'''
+                                    修正：
+                                    - **シート**: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}
+                                    - **修正前**: {cell_value}
+                                    - **修正後**: {new_cell_value}
+                                '''
+                                }, ensure_ascii=False), websocket)
+                                cell.value = new_value
+                    # 如果工作表被处理，保存修改
+                    if processed:
+                        workbook.save(new_file_path)
+                put_file("modify-ja-file", f"{file_dir}.{file_type}", new_file_path)
+                shutil.rmtree(f"./data/{file_dir}")
+                await manager.send_personal_message(json.dumps({
+                    "file_name": f"{file_dir}.{file_type}",
+                    "bucket_name": "modify-ja-file"
+                }, ensure_ascii=False), websocket)
         except Exception as e:
             print(e)
-
-
-
-
-
-
-
 
     return app
 
