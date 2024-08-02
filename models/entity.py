@@ -28,3 +28,7 @@ class Article(BaseModel):
 class Edit(BaseModel):
     oldpart: str
     prompt: str
+
+class Correct(BaseModel):
+    bucket_name: str
+    object_name: str
