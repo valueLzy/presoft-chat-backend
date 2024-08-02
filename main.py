@@ -227,7 +227,8 @@ def init_flask():
                 put_file("modify-ja-file", f"{file_dir}.{file_type}", new_file_path)
                 shutil.rmtree(f"./data/{file_dir}")
                 await manager.send_personal_message(json.dumps({
-                    "file_name": f"{file_dir}.{file_type}",
+                    "old_file_name":object_name,
+                    "new_file_name": f"{file_dir}.{file_type}",
                     "bucket_name": "modify-ja-file"
                 }, ensure_ascii=False), websocket)
         except Exception as e:
