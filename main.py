@@ -15,10 +15,11 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
 from db.sql import get_user_with_menus, check_username_exists, insert_user
 
 from llm.glm4 import glm4_9b_chat_ws
-from prompts import del_japanese_prompt
+from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
-from utils import md5_encrypt, download_file, put_file, has_japanese
-from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, Correct
+from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
+    replace_text_in_docx
+from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect,JachatCorrect
 
 
 # 普通对话接口#####
@@ -27,7 +28,7 @@ def init_flask():
     app = FastAPI()
 
     # 登录##############################################################
-    @app.post("/login")
+    @app.post("/user/login")
     def login(user: UserLogin):
         # 获取用户及其菜单信息
         user_info = get_user_with_menus(user.username, md5_encrypt(user.password), user.language)
@@ -51,7 +52,7 @@ def init_flask():
             "password": user_data[5]
         })
 
-    @app.post("/register")
+    @app.post("/user/register")
     def register(user: UserRegister):
         # 获取用户及密码
         user_name = user.username
@@ -85,9 +86,11 @@ def init_flask():
 
         except Exception as e:
             print(e)
+        finally:
+            manager.disconnect(websocket)
 
     # 论文---获取关键词##############################################################
-    @app.get("/getkeywords")
+    @app.get("/write/getkeywords")
     def getkeywords():
         keywords = ["gis", "作战仿真系统", "卫星定位", "弹道控制", "数据库",
                     "数据融合", "最优布站", "毁伤评估", "特情处理", "目标跟踪", "红蓝对抗",
@@ -95,12 +98,12 @@ def init_flask():
         return {"keywordlist": keywords}
 
     # 论文---生成大纲##############################################################
-    @app.post("/getbasic")
+    @app.post("/write/getbasic")
     def getbasic(basic: Basic):
         return get_outline(basic.article_title, 0.7, basic.article_base)
 
     # 论文---生成论文##############################################################
-    @app.websocket("/getarticle/{v1}")
+    @app.websocket("/write/getarticle/{v1}")
     async def commonchat(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
@@ -160,9 +163,12 @@ def init_flask():
 
         except Exception as e:
             print(e)
+        finally:
+            manager.disconnect(websocket)
+
 
     # 论文---修改章节##############################################################
-    @app.websocket("/editarticle/{v1}")
+    @app.websocket("/write/editarticle/{v1}")
     async def editarticle(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
@@ -179,15 +185,36 @@ def init_flask():
 
         except Exception as e:
             print(e)
+        finally:
+            manager.disconnect(websocket)
 
     # 日语修正##############################################################
-    @app.websocket("/correctJa/{v1}")
-    async def correctJa(websocket: WebSocket, v1: str):
+    @app.websocket("/correctJa/chat/{v1}")
+    async def correctJachat(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
             data = await websocket.receive_text()
-            params = Correct.parse_raw(data)
+            params = JachatCorrect.parse_raw(data)
+            prompt = params.prompt
+            answer = del_japanese_prompt_ws(prompt)
+            for chunk in answer:
+                await manager.send_personal_message(json.dumps({
+                    "answer": chunk.choices[0].delta.content
+                }, ensure_ascii=False), websocket)
+
+        except Exception as e:
+            print(e)
+        finally:
+            manager.disconnect(websocket)
+
+    @app.websocket("/correctJa/file/{v1}")
+    async def correctJafile(websocket: WebSocket, v1: str):
+        manager = ConnectionManager()
+        await manager.connect(websocket)
+        try:
+            data = await websocket.receive_text()
+            params = JachatCorrect.parse_raw(data)
             bucket_name = params.bucket_name
             object_name = params.object_name
             download_file_res = download_file(bucket_name, object_name)
@@ -198,11 +225,9 @@ def init_flask():
             if file_type == 'xlsx' or file_type == 'xls':
                 # 加载工作簿和工作表
                 workbook = openpyxl.load_workbook(file_path)
-
                 for sheet in workbook.sheetnames:
                     worksheet = workbook[sheet]
                     processed = False
-
                     # 遍历每个单元格
                     for row in worksheet.iter_rows(min_row=1, max_col=worksheet.max_column, max_row=worksheet.max_row):
                         for cell in row:
@@ -227,12 +252,76 @@ def init_flask():
                 put_file("modify-ja-file", f"{file_dir}.{file_type}", new_file_path)
                 shutil.rmtree(f"./data/{file_dir}")
                 await manager.send_personal_message(json.dumps({
-                    "old_file_name":object_name,
+                    "old_file_name": object_name,
                     "new_file_name": f"{file_dir}.{file_type}",
                     "bucket_name": "modify-ja-file"
                 }, ensure_ascii=False), websocket)
+            if file_type == 'txt':
+                # 读取文件内容
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    text = file.read()
+                text_array = text.split("\n\n")
+                for index, item in enumerate(text_array):
+                    if has_japanese(item):
+                        ai_value = del_japanese_prompt(0.1, item, [])
+                        aisay_item = item.replace("\n", "")
+                        aisay_value = ai_value.replace("\n", "")
+                        text_array[index] = ai_value  # 替换原始文本数组中的值
+                        await manager.send_personal_message(json.dumps({
+                            "content": f'''
+                               修正：
+                               - **修正前**: {aisay_item}
+                               - **修正後**: {aisay_value}
+                           '''
+                        }, ensure_ascii=False), websocket)
+
+                # 将修改后的文本数组重新组合成字符串
+                new_text = '\n\n'.join(text_array)
+                # 指定一个绝对路径
+                output_path = f'./data/new_{file_dir}.{file_type}'
+                # 创建一个txt文件，写入new_text
+                with open(output_path, 'w', encoding='utf-8') as output_file:
+                    output_file.write(new_text)
+                put_file("modify-ja-file", f"new_{file_dir}.{file_type}", output_path)
+                await manager.send_personal_message(json.dumps({
+                    "old_file_name": object_name,
+                    "new_file_name": f"new_{file_dir}.{file_type}",
+                    "bucket_name": "modify-ja-file"
+                }, ensure_ascii=False), websocket)
+            if file_type == 'doc' or file_type == 'docx':
+                replacements = {}
+                red_list = get_red_text_from_docx(file_path)
+                if len(red_list) > 0:
+                    for index, item in enumerate(red_list):
+                        ai_value = del_japanese_prompt(0.1, item, [])
+                        aisay_item = item.replace("\n", "")
+                        aisay_value = ai_value.replace("\n", "")
+                        replacements[item] = ai_value
+                        await manager.send_personal_message(json.dumps({
+                            "content": f'''
+                            修正：
+                            - **修正前**: {aisay_item}
+                            - **修正後**: {aisay_value}
+                        '''
+                        }, ensure_ascii=False), websocket)
+                        replace_text_in_docx(file_path, replacements, new_file_path)
+                    # 返回新文件的内容
+                    with open(new_file_path, "rb") as file:
+                        file_contents = file.read()
+                    os.remove(new_file_path)
+                    await manager.send_personal_message(json.dumps({
+                        "old_file_name": object_name,
+                        "new_file_name": new_file_path,
+                        "bucket_name": "modify-ja-file"
+                    }, ensure_ascii=False), websocket)
+                else:
+                    await manager.send_personal_message(json.dumps({
+                        "content": f'''翻訳が必要なテキストは検出されませんでした'''
+                    }, ensure_ascii=False), websocket)
         except Exception as e:
             print(e)
+        finally:
+            manager.disconnect(websocket)
 
     return app
 
