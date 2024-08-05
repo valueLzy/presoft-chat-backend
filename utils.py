@@ -2,6 +2,8 @@ import hashlib
 import os
 import uuid
 
+from docx import Document
+from docx.shared import RGBColor
 from minio import Minio
 
 minio_client = Minio(
@@ -62,6 +64,82 @@ def has_japanese(text: str) -> bool:
             return True
     return False
 
+def get_red_text_from_docx(file_path):
+    # 打开文档
+    doc = Document(file_path)
+    red_texts = []
+
+    # 遍历所有段落
+    for paragraph in doc.paragraphs:
+        for run in paragraph.runs:
+            # 检查字体颜色是否为红色
+            if run.font.color and run.font.color.rgb == RGBColor(255, 0, 0):
+                red_texts.append(run.text)
+
+    # 遍历所有表格
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        # 检查字体颜色是否为红色
+                        if run.font.color and run.font.color.rgb == RGBColor(255, 0, 0):
+                            red_texts.append(run.text)
+
+    return red_texts
+
+def replace_text_in_docx(file_path, replacements, new_file_path):
+    # 打开文档
+    doc = Document(file_path)
+
+    # 遍历所有段落并替换文本
+    for paragraph in doc.paragraphs:
+        for old_text, new_text in replacements.items():
+            if old_text in paragraph.text:
+                replace_text_in_paragraph(paragraph, old_text, new_text)
+
+    # 遍历所有表格并替换文本
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for old_text, new_text in replacements.items():
+                        if old_text in paragraph.text:
+                            replace_text_in_paragraph(paragraph, old_text, new_text)
+
+    # 保存修改后的文档
+    doc.save(new_file_path)
+
+def replace_text_in_docx(file_path, replacements, new_file_path):
+    # 打开文档
+    doc = Document(file_path)
+
+    # 遍历所有段落并替换文本
+    for paragraph in doc.paragraphs:
+        for old_text, new_text in replacements.items():
+            if old_text in paragraph.text:
+                replace_text_in_paragraph(paragraph, old_text, new_text)
+
+    # 遍历所有表格并替换文本
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for old_text, new_text in replacements.items():
+                        if old_text in paragraph.text:
+                            replace_text_in_paragraph(paragraph, old_text, new_text)
+
+    # 保存修改后的文档
+    doc.save(new_file_path)
+
+
+def replace_text_in_paragraph(paragraph, old_text, new_text):
+    for run in paragraph.runs:
+        if old_text in run.text:
+            run.text = run.text.replace(old_text, new_text)
+            run.font.color.rgb = RGBColor(72, 116, 203)
+
 
 if __name__ == '__main__':
-    print(put_file("vue-file", "aaaa.xlsx", "data/aaaa.xlsx"))
+    # print(put_file("vue-file", "aaaa.xlsx", "data/aaaa.xlsx"))
+    print(put_file("modify-ja-file", "test.docx", "data/test.docx"))

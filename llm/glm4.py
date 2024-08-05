@@ -23,8 +23,6 @@ def glm4_9b_chat_ws(history, temperature):
 
 #http请求走这个######################################
 url = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-
-
 def glm4_9b_chat_http(messages, temperature):
     # 定义请求体
     headers = {
