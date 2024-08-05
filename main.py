@@ -19,10 +19,8 @@ from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
     replace_text_in_docx
-from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect,JachatCorrect
-
-
-# 普通对话接口#####
+from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
+    JafileCorrect
 
 def init_flask():
     app = FastAPI()
@@ -52,6 +50,7 @@ def init_flask():
             "password": user_data[5]
         })
 
+    # 注册##############################################################
     @app.post("/user/register")
     def register(user: UserRegister):
         # 获取用户及密码
@@ -188,7 +187,7 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 日语修正##############################################################
+    # 日语修正-对话##############################################################
     @app.websocket("/correctJa/chat/{v1}")
     async def correctJachat(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
@@ -208,13 +207,14 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
+    # 日语修正-文件##############################################################
     @app.websocket("/correctJa/file/{v1}")
     async def correctJafile(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
             data = await websocket.receive_text()
-            params = JachatCorrect.parse_raw(data)
+            params = JafileCorrect.parse_raw(data)
             bucket_name = params.bucket_name
             object_name = params.object_name
             download_file_res = download_file(bucket_name, object_name)

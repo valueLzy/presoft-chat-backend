@@ -142,4 +142,4 @@ def replace_text_in_paragraph(paragraph, old_text, new_text):
 
 if __name__ == '__main__':
     # print(put_file("vue-file", "aaaa.xlsx", "data/aaaa.xlsx"))
-    print(put_file("modify-ja-file", "test.docx", "data/test.docx"))
+    print(md5_encrypt("111111"))
