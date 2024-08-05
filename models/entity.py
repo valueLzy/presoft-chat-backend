@@ -36,6 +36,9 @@ class Edit(BaseModel):
     prompt: str
 
 
-class Correct(BaseModel):
+class JafileCorrect(BaseModel):
     bucket_name: str
     object_name: str
+
+class JachatCorrect(BaseModel):
+    prompt: str
