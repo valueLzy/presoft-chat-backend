@@ -20,7 +20,8 @@ from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
     replace_text_in_docx
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect
+    JafileCorrect, Filechat1
+
 
 def init_flask():
     app = FastAPI()
@@ -323,6 +324,23 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
+    # 文件对话##############################################################
+    @app.websocket("/filechat1/{v1}")
+    async def filechat1(websocket: WebSocket, v1: str):
+        manager = ConnectionManager()
+        await manager.connect(websocket)
+        try:
+            data = await websocket.receive_text()
+            params = Filechat1.parse_raw(data)
+            bucket_name = params.bucket_name
+            object_name = params.object_name
+            download_file_res = download_file(bucket_name, object_name)
+            print(download_file_res)
+
+        except Exception as e:
+            print(e)
+        finally:
+            manager.disconnect(websocket)
     return app
 
 

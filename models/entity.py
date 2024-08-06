@@ -42,3 +42,8 @@ class JafileCorrect(BaseModel):
 
 class JachatCorrect(BaseModel):
     prompt: str
+
+class Filechat1(BaseModel):
+    bucket_name: str
+    object_name: str
+    userid: str
