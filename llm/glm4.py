@@ -32,7 +32,6 @@ def glm4_9b_chat_http(messages, temperature):
         "model": "glm-4-0520",  # 替换为你使用的模型名
         "messages": messages,
         "temperature": temperature,
-        "do_sample": True,
     }
 
     # 发起POST请求

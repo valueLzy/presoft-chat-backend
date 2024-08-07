@@ -309,9 +309,7 @@ def init_flask():
                         '''
                         }, ensure_ascii=False), websocket)
                         replace_text_in_docx(file_path, replacements, new_file_path)
-                    # 返回新文件的内容
-                    with open(new_file_path, "rb") as file:
-                        file_contents = file.read()
+                    put_file("modify-ja-file", f"{file_dir}.{file_type}", new_file_path)
                     os.remove(new_file_path)
                     await manager.send_personal_message(json.dumps({
                         "old_file_name": object_name,
