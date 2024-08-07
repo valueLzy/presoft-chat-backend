@@ -45,8 +45,13 @@ def create_milvus(collection_name, description):
             dtype=DataType.FLOAT_VECTOR,
             dim=1024
         )
+        file_name = FieldSchema(
+            name='file_name',
+            dtype=DataType.VARCHAR,
+            max_length=999
+        )
 
-        fields = [id, text, embeddings]
+        fields = [id, text, embeddings, file_name]
 
         schema = CollectionSchema(
             fields=fields,  # 字段,
@@ -160,4 +165,4 @@ def delete_milvus(collection_name):
 
 
 if __name__ == '__main__':
-    del_entity('yuntest')
+    delete_milvus('1231')

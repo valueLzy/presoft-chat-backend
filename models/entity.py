@@ -40,10 +40,20 @@ class JafileCorrect(BaseModel):
     bucket_name: str
     object_name: str
 
+
 class JachatCorrect(BaseModel):
     prompt: str
+
 
 class Filechat1(BaseModel):
     bucket_name: str
     object_name: str
     userid: str
+    description: str
+
+
+class Filechat2(BaseModel):
+    history: List[dict[str, str]]
+    question: str
+    userid: str
+    language: str

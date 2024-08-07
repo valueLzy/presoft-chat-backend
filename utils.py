@@ -2,9 +2,15 @@ import hashlib
 import os
 import uuid
 
+import requests
 from docx import Document
 from docx.shared import RGBColor
+from fastapi import Body
 from minio import Minio
+from pymilvus import FieldSchema, DataType, CollectionSchema
+
+from llm.embeddings import bg3_m3
+from milvus.milvus_tools import search_milvus
 
 minio_client = Minio(
     "192.168.1.21:19000",
@@ -64,6 +70,7 @@ def has_japanese(text: str) -> bool:
             return True
     return False
 
+
 def get_red_text_from_docx(file_path):
     # 打开文档
     doc = Document(file_path)
@@ -88,27 +95,6 @@ def get_red_text_from_docx(file_path):
 
     return red_texts
 
-def replace_text_in_docx(file_path, replacements, new_file_path):
-    # 打开文档
-    doc = Document(file_path)
-
-    # 遍历所有段落并替换文本
-    for paragraph in doc.paragraphs:
-        for old_text, new_text in replacements.items():
-            if old_text in paragraph.text:
-                replace_text_in_paragraph(paragraph, old_text, new_text)
-
-    # 遍历所有表格并替换文本
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for paragraph in cell.paragraphs:
-                    for old_text, new_text in replacements.items():
-                        if old_text in paragraph.text:
-                            replace_text_in_paragraph(paragraph, old_text, new_text)
-
-    # 保存修改后的文档
-    doc.save(new_file_path)
 
 def replace_text_in_docx(file_path, replacements, new_file_path):
     # 打开文档
@@ -138,6 +124,48 @@ def replace_text_in_paragraph(paragraph, old_text, new_text):
         if old_text in run.text:
             run.text = run.text.replace(old_text, new_text)
             run.font.color.rgb = RGBColor(72, 116, 203)
+
+
+def parse_file_other(bucket_name: str, file_name: str) -> list:
+    # 定义请求体
+    url = "http://192.168.1.21:5050/knowledge/parse-other/"
+    data = {
+        "bucket_name": bucket_name,  # 替换为你使用的模型名
+        "file_name": file_name
+    }
+
+    # 发起POST请求
+    response = requests.post(url, json=data)
+    # 处理响应
+    if response.status_code == 200:
+        result = response.json()
+        return result
+    else:
+        return []
+
+
+def parse_file_pdf(bucket_name: str, file_name: str) -> list:
+    # 定义请求体
+    url = "http://192.168.1.21:5050/knowledge/parse-pdf/"
+    data = {
+        "bucket_name": bucket_name,  # 替换为你使用的模型名
+        "file_name": file_name
+    }
+
+    # 发起POST请求
+    response = requests.post(url, json=data)
+    # 处理响应
+    if response.status_code == 200:
+        result = response.json()
+        return result
+    else:
+        return []
+
+
+def matching_milvus_paragraph(text, collection_name, matches_number):
+    res = search_milvus(bg3_m3(text), collection_name, matches_number)
+
+    return res
 
 
 if __name__ == '__main__':

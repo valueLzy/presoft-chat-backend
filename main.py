@@ -13,14 +13,18 @@ from starlette.responses import JSONResponse
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
     list_to_query, revise_article
 from db.sql import get_user_with_menus, check_username_exists, insert_user
+from knowledge.dataset_api import matching_paragraph
+from llm.embeddings import bg3_m3, rerank
 
 from llm.glm4 import glm4_9b_chat_ws
+from milvus.milvus_tools import create_milvus, insert_milvus, delete_milvus, get_milvus_collections_info, del_entity
+from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
-    replace_text_in_docx
+    replace_text_in_docx, parse_file_other
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect, Filechat1
+    JafileCorrect, Filechat1, Filechat2
 
 
 def init_flask():
@@ -325,18 +329,56 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 文件对话##############################################################
-    @app.websocket("/filechat1/{v1}")
-    async def filechat1(websocket: WebSocket, v1: str):
+    @app.post("/file_chat/upload")
+    def file_chat_upload(file: Filechat1):
+        user_id = file.user_id
+        milvus_list = get_milvus_collections_info()
+        content_list = parse_file_other(file.bucket_name, file.object_name)
+        if user_id in milvus_list:
+            del_entity(user_id)
+        else:
+            create_milvus(user_id, file.description)
+        try:
+            for item in content_list:
+                if item is None:
+                    continue
+                data = [{
+                    'text': item,
+                    'embeddings': bg3_m3(item),
+                    'file_name': file.object_name
+                }]
+                insert_milvus(data, user_id)
+            return 'success'
+        except Exception as e:
+            return e
+
+    @app.websocket("/file_chat/qa/{v1}")
+    async def file_chat_qa(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
             data = await websocket.receive_text()
-            params = Filechat1.parse_raw(data)
-            bucket_name = params.bucket_name
-            object_name = params.object_name
-            download_file_res = download_file(bucket_name, object_name)
-            print(download_file_res)
-
+            params = Filechat2.parse_raw(data)
+            question = params.question
+            history = params.history
+            user_id = params.user_id
+            language = params.language
+            res = matching_paragraph(question, user_id, 1000)
+            filtered_result = []
+            for result in res:
+                filtered_result = [res.entity.text for res in result if res.score > 0]
+            a = rerank(question, filtered_result, 3)
+            rerank_results = [y['index'] for y in a if y['relevance_score'] > 0.7]
+            rerank_filtered_result = []
+            for index in rerank_results:
+                rerank_filtered_result.append(filtered_result[index])
+            message = {"content": file_chat_prompt.format(question=question, content=str(rerank_filtered_result), language=language), "role": "user"}
+            history.append(message)
+            answer = glm4_9b_chat_ws(history, 0.7)
+            for chunk in answer:
+                await manager.send_personal_message(json.dumps({
+                    "answer": chunk.choices[0].delta.content
+                }, ensure_ascii=False), websocket)
         except Exception as e:
             print(e)
         finally:
