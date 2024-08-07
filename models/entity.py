@@ -49,7 +49,6 @@ class Filechat1(BaseModel):
     bucket_name: str
     object_name: str
     userid: str
-    description: str
 
 
 class Filechat2(BaseModel):

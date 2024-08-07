@@ -342,7 +342,7 @@ def init_flask():
             if is_in_name:
                 del_entity(user_id)
             else:
-                create_milvus(user_id, file.description)
+                create_milvus(user_id, "")
             for item in content_list:
                 if item is None:
                     continue
