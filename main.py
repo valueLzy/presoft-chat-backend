@@ -170,7 +170,6 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-
     # 论文---修改章节##############################################################
     @app.websocket("/write/editarticle/{v1}")
     async def editarticle(websocket: WebSocket, v1: str):
@@ -372,7 +371,8 @@ def init_flask():
             rerank_filtered_result = []
             for index in rerank_results:
                 rerank_filtered_result.append(filtered_result[index])
-            message = {"content": file_chat_prompt.format(question=question, content=str(rerank_filtered_result), language=language), "role": "user"}
+            message = {"content": file_chat_prompt.format(question=question, content=str(rerank_filtered_result),
+                                                          language=language), "role": "user"}
             history.append(message)
             answer = glm4_9b_chat_ws(history, 0.7)
             for chunk in answer:
@@ -383,6 +383,7 @@ def init_flask():
             print(e)
         finally:
             manager.disconnect(websocket)
+
     return app
 
 
