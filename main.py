@@ -24,7 +24,7 @@ from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
     replace_text_in_docx, parse_file_other, parse_file_pdf
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect, Filechat1, Filechat2
+    JafileCorrect, Filechat1, Filechat2, ResponseEntity
 
 
 def init_flask():
@@ -352,10 +352,16 @@ def init_flask():
                     'file_name': file.object_name
                 }]
                 insert_milvus(data, user_id)
-            return 'success'
+            return ResponseEntity(
+                        message="success",
+                        status_code=200
+                    )
         except Exception as e:
             print(e)
-            return 'error'
+            return ResponseEntity(
+                message="error",
+                status_code=500
+            )
 
     @app.websocket("/file_chat/qa/{v1}")
     async def file_chat_qa(websocket: WebSocket, v1: str):

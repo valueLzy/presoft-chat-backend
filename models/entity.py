@@ -2,6 +2,12 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 
 
+
+class ResponseEntity(BaseModel):
+    status_code: int
+    message: str
+
+
 class Question(BaseModel):
     prompt: str
     history: List[dict[str, str]]
