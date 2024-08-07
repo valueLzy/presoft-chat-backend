@@ -131,7 +131,7 @@ def parse_file_other(bucket_name: str, file_name: str) -> list:
     url = "http://192.168.1.21:5050/knowledge/parse-other/"
     data = {
         "bucket_name": bucket_name,  # 替换为你使用的模型名
-        "file_name": file_name
+        "object_name": file_name
     }
 
     # 发起POST请求
@@ -149,7 +149,7 @@ def parse_file_pdf(bucket_name: str, file_name: str) -> list:
     url = "http://192.168.1.21:5050/knowledge/parse-pdf/"
     data = {
         "bucket_name": bucket_name,  # 替换为你使用的模型名
-        "file_name": file_name
+        "object_name": file_name
     }
 
     # 发起POST请求

@@ -22,7 +22,7 @@ from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
-    replace_text_in_docx, parse_file_other
+    replace_text_in_docx, parse_file_other, parse_file_pdf
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
     JafileCorrect, Filechat1, Filechat2
 
@@ -330,14 +330,19 @@ def init_flask():
     # 文件对话##############################################################
     @app.post("/file_chat/upload")
     def file_chat_upload(file: Filechat1):
-        user_id = file.user_id
-        milvus_list = get_milvus_collections_info()
-        content_list = parse_file_other(file.bucket_name, file.object_name)
-        if user_id in milvus_list:
-            del_entity(user_id)
-        else:
-            create_milvus(user_id, file.description)
         try:
+            user_id = "_"+file.userid
+            milvus_list = get_milvus_collections_info()
+            is_in_name = any(item['name'] == user_id for item in milvus_list)
+            file_type = os.path.splitext(file.object_name)[1]
+            if file_type == 'pdf':
+                content_list = parse_file_pdf(file.bucket_name, file.object_name)
+            else:
+                content_list = parse_file_other(file.bucket_name, file.object_name)
+            if is_in_name:
+                del_entity(user_id)
+            else:
+                create_milvus(user_id, file.description)
             for item in content_list:
                 if item is None:
                     continue
@@ -349,7 +354,8 @@ def init_flask():
                 insert_milvus(data, user_id)
             return 'success'
         except Exception as e:
-            return e
+            print(e)
+            return 'error'
 
     @app.websocket("/file_chat/qa/{v1}")
     async def file_chat_qa(websocket: WebSocket, v1: str):
@@ -360,7 +366,7 @@ def init_flask():
             params = Filechat2.parse_raw(data)
             question = params.question
             history = params.history
-            user_id = params.user_id
+            user_id = "_"+params.userid
             language = params.language
             res = matching_paragraph(question, user_id, 1000)
             filtered_result = []

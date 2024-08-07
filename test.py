@@ -1,20 +1,19 @@
-import asyncio
-import websockets
+# 给定的列表
+data = [
+    {'description': '论文', 'name': 'damage_explosion_v1'},
+    {'description': 'open_project', 'name': 'open_project'},
+    {'description': 'v2', 'name': 'damage_explosion_v2'},
+    {'description': '', 'name': '_3'}
+]
 
+# 要判断的字符串
+target_string = '_3'
 
-async def test_websocket():
-    uri = "ws://localhost:8009/ws/some_value"
-    async with websockets.connect(uri) as websocket:
-        # 等待连接建立
-        await asyncio.sleep(1)  # 这里等待1秒，确保连接已建立
+# 判断字符串是否在列表的 name 值中
+is_in_name = any(item['name'] == target_string for item in data)
 
-        # 发送消息
-        await websocket.send("Hello WebSocket!")
-
-        # 接收消息
-        response = await websocket.recv()
-        print("Received:", response)
-
-
-# 运行测试函数
-asyncio.run(test_websocket())
+# 输出结果
+if is_in_name:
+    print(f"'{target_string}' 是列表中的一个 name 值")
+else:
+    print(f"'{target_string}' 不是列表中的一个 name 值")
