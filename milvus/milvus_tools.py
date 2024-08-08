@@ -20,7 +20,8 @@ def get_milvus_collections_info():
         collection = Collection(name)
         collection_info = {
             'name': name,
-            'description': collection.description if hasattr(collection, 'description') else 'No description available'
+            'description': collection.description if hasattr(collection, 'description') else 'No description available',
+            'entity': collection.num_entities
         }
         collections_info.append(collection_info)
 

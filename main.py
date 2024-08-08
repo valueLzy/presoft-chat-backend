@@ -24,7 +24,7 @@ from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
     replace_text_in_docx, parse_file_other, parse_file_pdf
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect, Filechat1, Filechat2, ResponseEntity
+    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledgeinformation
 
 
 def init_flask():
@@ -287,6 +287,7 @@ def init_flask():
                 with open(output_path, 'w', encoding='utf-8') as output_file:
                     output_file.write(new_text)
                 put_file("modify-ja-file", f"new_{file_dir}.{file_type}", output_path)
+                shutil.rmtree(f"./data/{file_dir}")
                 await manager.send_personal_message(json.dumps({
                     "old_file_name": object_name,
                     "new_file_name": f"new_{file_dir}.{file_type}",
@@ -310,7 +311,8 @@ def init_flask():
                         }, ensure_ascii=False), websocket)
                         replace_text_in_docx(file_path, replacements, new_file_path)
                     put_file("modify-ja-file", f"{file_dir}.{file_type}", new_file_path)
-                    os.remove(new_file_path)
+                    # 删除 file_dir 文件夹及其所有内容
+                    shutil.rmtree(f"./data/{file_dir}")
                     await manager.send_personal_message(json.dumps({
                         "old_file_name": object_name,
                         "new_file_name": new_file_path,
@@ -325,7 +327,7 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 文件对话##############################################################
+    # 文件对话-下载文件##############################################################
     @app.post("/file_chat/upload")
     def file_chat_upload(file: Filechat1):
         try:
@@ -361,6 +363,7 @@ def init_flask():
                 status_code=500
             )
 
+    # 文件对话-用户对话##############################################################
     @app.websocket("/file_chat/qa/{v1}")
     async def file_chat_qa(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
@@ -393,6 +396,29 @@ def init_flask():
             print(e)
         finally:
             manager.disconnect(websocket)
+
+    # 知识库-获取知识库列表##############################################################
+    @app.get("/knowledge_base/getlist")
+    def getknowledgelist():
+        knowledgelist = get_milvus_collections_info()
+        return JSONResponse(status_code=200, content={"list": knowledgelist})
+
+    # 知识库-新建知识库##############################################################
+    @app.post("/knowledge_base/createbase")
+    def createbase(knowledgeinformation: Knowledgeinformation):
+        knowledgelist = get_milvus_collections_info()
+
+        if knowledgeinformation.name in knowledgelist:
+            return JSONResponse(status_code=200, content={"message": "知识库已存在！"})
+
+        result = create_milvus(knowledgeinformation.name, knowledgeinformation.description)
+        return JSONResponse(status_code=200, content={"message": result})
+
+    # 知识库-删除知识库##############################################################
+    @app.post("/knowledge_base/deletebase")
+    def createnew(knowledgeinformation: Knowledgeinformation):
+        result = create_milvus(knowledgeinformation.name, knowledgeinformation.description)
+        return JSONResponse(status_code=200, content={"message": result})
 
     return app
 

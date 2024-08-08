@@ -62,3 +62,7 @@ class Filechat2(BaseModel):
     question: str
     userid: str
     language: str
+
+class Knowledgeinformation(BaseModel):
+    name: str
+    description: str
