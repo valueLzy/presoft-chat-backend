@@ -408,7 +408,7 @@ def init_flask():
     def createbase(knowledgeinformation: Knowledgeinformation):
         knowledgelist = get_milvus_collections_info()
 
-        if knowledgeinformation.name in knowledgelist:
+        if any(knowledgeinformation.name == item['name'] for item in knowledgelist):
             return JSONResponse(status_code=200, content={"message": "知识库已存在！"})
 
         result = create_milvus(knowledgeinformation.name, knowledgeinformation.description)
