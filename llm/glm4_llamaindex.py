@@ -19,7 +19,7 @@ class GLM4(LLM):
     def _call(self, prompt: str, stop: Optional[List[str]] = None,
               run_manager: Optional[CallbackManagerForLLMRun] = None) -> str:
         headers = {
-            "Authorization": f"Bearer e479f5521d65e3c5d358341a6e2f6c0e.Ci18igbfpxoyuhHp"
+            "Authorization": f"Bearer 214934a091823a0715e0bdad6a440446.fkq0vOohPB3nVBGX"
         }
         url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
         data = {

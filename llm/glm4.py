@@ -2,7 +2,7 @@ import requests
 from openai import OpenAI
 from zhipuai import ZhipuAI
 
-apikey = "e479f5521d65e3c5d358341a6e2f6c0e.Ci18igbfpxoyuhHp"
+apikey = "214934a091823a0715e0bdad6a440446.fkq0vOohPB3nVBGX"
 
 
 #流式返回用这个######################################
@@ -26,7 +26,7 @@ url = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
 def glm4_9b_chat_http(messages, temperature):
     # 定义请求体
     headers = {
-        "Authorization": f"Bearer e479f5521d65e3c5d358341a6e2f6c0e.Ci18igbfpxoyuhHp"
+        "Authorization": f"Bearer 214934a091823a0715e0bdad6a440446.fkq0vOohPB3nVBGX"
     }
     data = {
         "model": "glm-4-0520",  # 替换为你使用的模型名
