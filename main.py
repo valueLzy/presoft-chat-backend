@@ -17,7 +17,8 @@ from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
 from llm.glm4 import glm4_9b_chat_ws
-from milvus.milvus_tools import create_milvus, insert_milvus, delete_milvus, get_milvus_collections_info, del_entity
+from milvus.milvus_tools import create_milvus, insert_milvus, delete_milvus, get_milvus_collections_info, del_entity, \
+    get_unique_field_values
 from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
@@ -419,6 +420,20 @@ def init_flask():
     def createnew(knowledgeinformation: Knowledgeinformation):
         result = create_milvus(knowledgeinformation.name, knowledgeinformation.description)
         return JSONResponse(status_code=200, content={"message": result})
+
+    @app.post("/write/get_keywords")
+    def get_write_keywords():
+        try:
+            res = get_unique_field_values("damage_explosion_v2", "type")
+            return ResponseEntity(
+                message=res,
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message=str(e),
+                status_code=500
+            )
 
     return app
 

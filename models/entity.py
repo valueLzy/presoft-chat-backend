@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Dict, Any
 
 
-
 class ResponseEntity(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     status_code: int
-    message: str
+    message: any
 
 
 class Question(BaseModel):
@@ -62,6 +62,7 @@ class Filechat2(BaseModel):
     question: str
     userid: str
     language: str
+
 
 class Knowledgeinformation(BaseModel):
     name: str

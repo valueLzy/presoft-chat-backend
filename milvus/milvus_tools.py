@@ -165,5 +165,18 @@ def delete_milvus(collection_name):
         return e
 
 
+def get_unique_field_values(collection_name, field_name):
+    field_values = set()
+    collection = Collection(collection_name)
+    result = collection.query(
+        expr=f"id > 0",
+        output_fields=[field_name],
+    )
+    # 提取字段值并去重
+    for item in result:
+        field_values.add(item[field_name])
+    return field_values
+
+
 if __name__ == '__main__':
     delete_milvus('1231')
