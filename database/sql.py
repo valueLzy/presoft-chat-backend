@@ -1,4 +1,4 @@
-from db.db import execute_query
+from database.db import execute_query
 
 
 def get_user_with_menus(username, password, language):
@@ -73,3 +73,30 @@ def insert_user(user_id, username, roles, menus, desc, password, company, nation
     """
     params = (user_id, username, roles, menus, desc, password, company, nationality)
     return execute_query(query, params)
+
+
+def insert_knowledge(id, name, description, milvus_name, graph_name, user_id, create_time):
+    try:
+        query = """
+        INSERT INTO `knowledge_manage` (
+            `id`, 
+            `name`, 
+            `description`, 
+            `milvus_name`, 
+            `graph_name`, 
+            `user_id`, 
+            `create_time`
+        ) VALUES (
+            %s, 
+            %s, 
+            %s, 
+            %s, 
+            %s, 
+            %s, 
+            %s
+        );
+        """
+        params = (id, name, description, milvus_name, graph_name, user_id, create_time)
+        return execute_query(query, params)
+    except Exception as e:
+        raise e

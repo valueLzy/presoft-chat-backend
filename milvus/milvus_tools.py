@@ -78,7 +78,7 @@ def create_milvus(collection_name, description):
         utility.loading_progress(collection_name)
         return 'success'
     except Exception as e:
-        return e
+        raise e
 
 
 def insert_milvus(data, collection_name):

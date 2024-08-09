@@ -1,23 +1,24 @@
-import asyncio
 import json
 import os
 import shutil
 import uuid
+from datetime import datetime
 
 import openpyxl
 import uvicorn
-from fastapi import FastAPI, WebSocket, UploadFile, File, Form
+from fastapi import FastAPI, WebSocket
 from openpyxl.utils import get_column_letter
 from starlette.responses import JSONResponse
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
     list_to_query, revise_article
-from db.sql import get_user_with_menus, check_username_exists, insert_user
+from database.graph_ngql import create_nebula_space_and_schema
+from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
 from llm.glm4 import glm4_9b_chat_ws
-from milvus.milvus_tools import create_milvus, insert_milvus, delete_milvus, get_milvus_collections_info, del_entity, \
+from milvus.milvus_tools import create_milvus, insert_milvus, get_milvus_collections_info, del_entity, \
     get_unique_field_values
 from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
@@ -25,7 +26,7 @@ from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
     replace_text_in_docx, parse_file_other, parse_file_pdf
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledgeinformation
+    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge
 
 
 def init_flask():
@@ -405,21 +406,24 @@ def init_flask():
         return JSONResponse(status_code=200, content={"list": knowledgelist})
 
     # 知识库-新建知识库##############################################################
-    @app.post("/knowledge_base/createbase")
-    def createbase(knowledgeinformation: Knowledgeinformation):
-        knowledgelist = get_milvus_collections_info()
-
-        if any(knowledgeinformation.name == item['name'] for item in knowledgelist):
-            return JSONResponse(status_code=200, content={"message": "知识库已存在！"})
-
-        result = create_milvus(knowledgeinformation.name, knowledgeinformation.description)
-        return JSONResponse(status_code=200, content={"message": result})
-
-    # 知识库-删除知识库##############################################################
-    @app.post("/knowledge_base/deletebase")
-    def createnew(knowledgeinformation: Knowledgeinformation):
-        result = create_milvus(knowledgeinformation.name, knowledgeinformation.description)
-        return JSONResponse(status_code=200, content={"message": result})
+    @app.post("/knowledge/create_database")
+    def create_knowledge(knowledge: Knowledge):
+        try:
+            # 创建milvus
+            create_milvus(knowledge.name, knowledge.description)
+            # 创建graph
+            create_nebula_space_and_schema(knowledge.name)
+            # 插入mysql
+            insert_knowledge(str(uuid.uuid4()), knowledge.name, knowledge.description, knowledge.name, knowledge.name, knowledge.userid, datetime.now())
+            return ResponseEntity(
+                message="success",
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message="error",
+                status_code=500
+            )
 
     @app.post("/write/get_keywords")
     def get_write_keywords():

@@ -64,6 +64,7 @@ class Filechat2(BaseModel):
     language: str
 
 
-class Knowledgeinformation(BaseModel):
+class Knowledge(BaseModel):
     name: str
     description: str
+    userid: str
