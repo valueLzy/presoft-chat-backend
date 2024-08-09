@@ -33,7 +33,7 @@ from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edi
 def init_flask():
     app = FastAPI()
 
-    # 登录##############################################################
+    # 登录
     @app.post("/user/login")
     def login(user: UserLogin):
         # 获取用户及其菜单信息
@@ -58,7 +58,7 @@ def init_flask():
             "password": user_data[5]
         })
 
-    # 注册##############################################################
+    # 注册
     @app.post("/user/register")
     def register(user: UserRegister):
         # 获取用户及密码
@@ -72,9 +72,9 @@ def init_flask():
                         user.nationality)
             return JSONResponse(status_code=200, content={"message": "success"})
 
-    # 普通对话##############################################################
-    @app.websocket("/commonchat/{v1}")
-    async def commonchat(websocket: WebSocket, v1: str):
+    # 普通对话
+    @app.websocket("/common_chat/{v1}")
+    async def common_chat(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
@@ -96,22 +96,22 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 论文---获取关键词##############################################################
-    @app.get("/write/getkeywords")
-    def getkeywords():
+    # 论文---获取关键词
+    @app.get("/write/get_keywords")
+    def get_keywords():
         keywords = ["gis", "作战仿真系统", "卫星定位", "弹道控制", "数据库",
                     "数据融合", "最优布站", "毁伤评估", "特情处理", "目标跟踪", "红蓝对抗",
                     "网络对抗", "联合弹药毁伤", "视觉仿真", "训练考核评价"]
         return {"keywordlist": keywords}
 
-    # 论文---生成大纲##############################################################
-    @app.post("/write/getbasic")
-    def getbasic(basic: Basic):
+    # 论文---生成大纲
+    @app.post("/write/get_basic")
+    def get_basic(basic: Basic):
         return get_outline(basic.article_title, 0.7, basic.article_base)
 
-    # 论文---生成论文##############################################################
-    @app.websocket("/write/getarticle/{v1}")
-    async def commonchat(websocket: WebSocket, v1: str):
+    # 论文---生成论文
+    @app.websocket("/write/get_article/{v1}")
+    async def get_article(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
@@ -173,9 +173,9 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 论文---修改章节##############################################################
-    @app.websocket("/write/editarticle/{v1}")
-    async def editarticle(websocket: WebSocket, v1: str):
+    # 论文---修改章节
+    @app.websocket("/write/edit_article/{v1}")
+    async def edit_article(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
@@ -194,9 +194,9 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 日语修正-对话##############################################################
+    # 日语修正-对话
     @app.websocket("/correctJa/chat/{v1}")
-    async def correctJachat(websocket: WebSocket, v1: str):
+    async def correct_ja_chat(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
@@ -214,9 +214,9 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 日语修正-文件##############################################################
-    @app.websocket("/correctJa/file/{v1}")
-    async def correctJafile(websocket: WebSocket, v1: str):
+    # 日语修正-文件
+    @app.websocket("/correct_Ja/file/{v1}")
+    async def correct_ja_file(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
@@ -330,7 +330,7 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 文件对话-下载文件##############################################################
+    # 文件对话-下载文件
     @app.post("/file_chat/upload")
     def file_chat_upload(file: Filechat1):
         try:
@@ -366,7 +366,7 @@ def init_flask():
                 status_code=500
             )
 
-    # 文件对话-用户对话##############################################################
+    # 文件对话-用户对话
     @app.websocket("/file_chat/qa/{v1}")
     async def file_chat_qa(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
@@ -400,7 +400,7 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 知识库-获取知识库列表##############################################################
+    # 知识库-获取知识库列表
     @app.post("/knowledge_base/getlist")
     def get_knowledge_list(knowledge: GetKnowledge):
         keys = ['id', 'name', 'description', 'milvus_name', 'graph_name', 'user_id', 'create_time']
@@ -413,7 +413,7 @@ def init_flask():
             status_code=200
         )
 
-    # 知识库-新建知识库##############################################################
+    # 知识库-新建知识库
     @app.post("/knowledge/create_database")
     def create_knowledge(knowledge: Knowledge):
         try:
@@ -442,7 +442,7 @@ def init_flask():
                 status_code=500
             )
 
-    # 知识库-删除知识库##############################################################
+    # 知识库-删除知识库
     @app.post("/knowledge/drop_database")
     def drop_knowledge(knowledge: DelKnowledge):
         try:
