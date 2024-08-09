@@ -100,3 +100,26 @@ def insert_knowledge(id, name, description, milvus_name, graph_name, user_id, cr
         return execute_query(query, params)
     except Exception as e:
         raise e
+
+
+def get_knowledge_by_user(user_id):
+    query = """
+    SELECT 
+        id, 
+        name, 
+        description, 
+        milvus_name, 
+        graph_name, 
+        user_id, 
+        create_time
+    FROM 
+        knowledge_manage
+    WHERE 
+        %s = 1 OR user_id = %s;
+    """
+    params = (user_id, user_id)
+    return execute_query(query, params)
+
+
+if __name__ == '__main__':
+    print(get_knowledge_by_user("1"))

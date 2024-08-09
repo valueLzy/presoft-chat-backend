@@ -13,7 +13,8 @@ from starlette.responses import JSONResponse
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
     list_to_query, revise_article
 from database.graph_ngql import create_nebula_space_and_schema
-from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge
+from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
+    get_knowledge_by_user
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
@@ -26,7 +27,7 @@ from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
     replace_text_in_docx, parse_file_other, parse_file_pdf
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge
+    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge
 
 
 def init_flask():
@@ -400,21 +401,36 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 知识库-获取知识库列表##############################################################
-    @app.get("/knowledge_base/getlist")
-    def getknowledgelist():
-        knowledgelist = get_milvus_collections_info()
-        return JSONResponse(status_code=200, content={"list": knowledgelist})
+    @app.post("/knowledge_base/getlist")
+    def get_knowledge_list(knowledge: GetKnowledge):
+        keys = ['id', 'name', 'description', 'milvus_name', 'graph_name', 'user_id', 'create_time']
+        knowledge_list = get_knowledge_by_user(knowledge.userid)
+        result = []
+        for item in knowledge_list:
+            result.append(dict(zip(keys, item)))
+        return ResponseEntity(
+            message=result,
+            status_code=200
+        )
 
     # 知识库-新建知识库##############################################################
     @app.post("/knowledge/create_database")
     def create_knowledge(knowledge: Knowledge):
         try:
+            res = get_knowledge_by_user(knowledge.userid)
+            second_elements = [item[1] for item in res]
+            if knowledge.name in second_elements:
+                return ResponseEntity(
+                    message="知识库名称已存在！",
+                    status_code=501
+                )
+            knowledge_name = knowledge.name+"_"+knowledge.userid
             # 创建milvus
-            create_milvus(knowledge.name, knowledge.description)
+            create_milvus(knowledge_name, knowledge.description)
             # 创建graph
-            create_nebula_space_and_schema(knowledge.name)
+            create_nebula_space_and_schema(knowledge_name)
             # 插入mysql
-            insert_knowledge(str(uuid.uuid4()), knowledge.name, knowledge.description, knowledge.name, knowledge.name, knowledge.userid, datetime.now())
+            insert_knowledge(str(uuid.uuid4()), knowledge.name, knowledge.description, knowledge_name, knowledge_name, knowledge.userid, datetime.now())
             return ResponseEntity(
                 message="success",
                 status_code=200

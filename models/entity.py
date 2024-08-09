@@ -68,3 +68,7 @@ class Knowledge(BaseModel):
     name: str
     description: str
     userid: str
+
+
+class GetKnowledge(BaseModel):
+    userid: str
