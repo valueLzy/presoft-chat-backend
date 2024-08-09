@@ -222,7 +222,7 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 日语修正-文件
-    @app.websocket("/correct_Ja/file/{v1}")
+    @app.websocket("/correctJa/file/{v1}")
     async def correct_ja_file(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
@@ -408,7 +408,7 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 知识库-获取知识库列表
-    @app.post("/knowledge_base/getlist")
+    @app.post("/knowledge/get_list")
     def get_knowledge_list(knowledge: GetKnowledge):
         keys = ['id', 'name', 'description', 'milvus_name', 'graph_name', 'user_id', 'create_time']
         knowledge_list = get_knowledge_by_user(knowledge.userid)
