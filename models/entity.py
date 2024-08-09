@@ -72,3 +72,8 @@ class Knowledge(BaseModel):
 
 class GetKnowledge(BaseModel):
     userid: str
+
+
+class DelKnowledge(BaseModel):
+    userid: str
+    name: str

@@ -162,7 +162,7 @@ def delete_milvus(collection_name):
         utility.drop_collection(collection_name)
         return 'success'
     except Exception as e:
-        return e
+        raise e
 
 
 def get_unique_field_values(collection_name, field_name):

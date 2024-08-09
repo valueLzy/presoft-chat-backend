@@ -12,22 +12,22 @@ from starlette.responses import JSONResponse
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
     list_to_query, revise_article
-from database.graph_ngql import create_nebula_space_and_schema
+from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
-    get_knowledge_by_user
+    get_knowledge_by_user, delete_knowledge_by_name_and_user
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
 from llm.glm4 import glm4_9b_chat_ws
 from milvus.milvus_tools import create_milvus, insert_milvus, get_milvus_collections_info, del_entity, \
-    get_unique_field_values
+    get_unique_field_values, delete_milvus
 from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
     replace_text_in_docx, parse_file_other, parse_file_pdf
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge
+    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge
 
 
 def init_flask():
@@ -334,7 +334,7 @@ def init_flask():
     @app.post("/file_chat/upload")
     def file_chat_upload(file: Filechat1):
         try:
-            user_id = "_"+file.userid
+            user_id = "_" + file.userid
             milvus_list = get_milvus_collections_info()
             is_in_name = any(item['name'] == user_id for item in milvus_list)
             file_type = os.path.splitext(file.object_name)[1]
@@ -356,9 +356,9 @@ def init_flask():
                 }]
                 insert_milvus(data, user_id)
             return ResponseEntity(
-                        message="success",
-                        status_code=200
-                    )
+                message="success",
+                status_code=200
+            )
         except Exception as e:
             print(e)
             return ResponseEntity(
@@ -376,7 +376,7 @@ def init_flask():
             params = Filechat2.parse_raw(data)
             question = params.question
             history = params.history
-            user_id = "_"+params.userid
+            user_id = "_" + params.userid
             language = params.language
             res = matching_paragraph(question, user_id, 1000)
             filtered_result = []
@@ -424,13 +424,32 @@ def init_flask():
                     message="知识库名称已存在！",
                     status_code=501
                 )
-            knowledge_name = knowledge.name+"_"+knowledge.userid
+            knowledge_name = knowledge.name + "_" + knowledge.userid
             # 创建milvus
             create_milvus(knowledge_name, knowledge.description)
             # 创建graph
             create_nebula_space_and_schema(knowledge_name)
             # 插入mysql
-            insert_knowledge(str(uuid.uuid4()), knowledge.name, knowledge.description, knowledge_name, knowledge_name, knowledge.userid, datetime.now())
+            insert_knowledge(str(uuid.uuid4()), knowledge.name, knowledge.description, knowledge_name, knowledge_name,
+                             knowledge.userid, datetime.now())
+            return ResponseEntity(
+                message="success",
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message="error",
+                status_code=500
+            )
+
+    # 知识库-删除知识库##############################################################
+    @app.post("/knowledge/drop_database")
+    def drop_knowledge(knowledge: DelKnowledge):
+        try:
+            mg_name = knowledge.name + "_" + knowledge.userid
+            drop_space(mg_name)
+            delete_milvus(mg_name)
+            delete_knowledge_by_name_and_user(knowledge.name, knowledge.userid)
             return ResponseEntity(
                 message="success",
                 status_code=200

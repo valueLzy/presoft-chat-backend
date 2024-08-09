@@ -121,5 +121,15 @@ def get_knowledge_by_user(user_id):
     return execute_query(query, params)
 
 
-if __name__ == '__main__':
-    print(get_knowledge_by_user("1"))
+def delete_knowledge_by_name_and_user(name, user_id):
+    try:
+        query = """
+        DELETE FROM 
+            knowledge_manage
+        WHERE 
+            name = %s AND user_id = %s;
+        """
+        params = (name, user_id)
+        return execute_query(query, params)
+    except Exception as e:
+        raise e

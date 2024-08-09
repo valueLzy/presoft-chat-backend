@@ -28,5 +28,27 @@ def create_nebula_space_and_schema(space_name):
         raise e
 
 
+def drop_space(space_name):
+    try:
+        config = Config()
+        config.max_connection_pool_size = 10
+        config.timeout = 60000
+        config.idle_time = 0
+        config.interval_check = -1
+
+        connection_pool = ConnectionPool()
+        ok = connection_pool.init([('192.168.1.21', 9669)], config)
+
+        if not ok:
+            raise Exception("Failed to initialize connection pool")
+
+        with connection_pool.session_context('root', 'nebula') as sess:
+            sess.execute(f'''
+                DROP SPACE `{space_name}`;
+            ''')
+    except Exception as e:
+        raise e
+
+
 # 示例调用
-create_nebula_space_and_schema('my_space')
+drop_space('my_space')
