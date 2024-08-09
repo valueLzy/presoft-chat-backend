@@ -97,12 +97,19 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 论文---获取关键词
-    @app.get("/write/get_keywords")
-    def get_keywords():
-        keywords = ["gis", "作战仿真系统", "卫星定位", "弹道控制", "数据库",
-                    "数据融合", "最优布站", "毁伤评估", "特情处理", "目标跟踪", "红蓝对抗",
-                    "网络对抗", "联合弹药毁伤", "视觉仿真", "训练考核评价"]
-        return {"keywordlist": keywords}
+    @app.post("/write/get_keywords")
+    def get_write_keywords():
+        try:
+            res = get_unique_field_values("damage_explosion_v2", "type")
+            return ResponseEntity(
+                message=res,
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message=str(e),
+                status_code=500
+            )
 
     # 论文---生成大纲
     @app.post("/write/get_basic")
@@ -457,20 +464,6 @@ def init_flask():
         except Exception as e:
             return ResponseEntity(
                 message="error",
-                status_code=500
-            )
-
-    @app.post("/write/get_keywords")
-    def get_write_keywords():
-        try:
-            res = get_unique_field_values("damage_explosion_v2", "type")
-            return ResponseEntity(
-                message=res,
-                status_code=200
-            )
-        except Exception as e:
-            return ResponseEntity(
-                message=str(e),
                 status_code=500
             )
 
