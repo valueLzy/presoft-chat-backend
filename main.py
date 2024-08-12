@@ -114,7 +114,7 @@ def init_flask():
     # 论文---生成大纲
     @app.post("/write/get_basic")
     def get_basic(basic: Basic):
-        return get_outline(basic.article_title, 0.7, basic.article_base)
+        return get_outline(basic.article_title, 0.7, list_to_query(basic.article_choices))
 
     # 论文---生成论文
     @app.websocket("/write/get_article/{v1}")

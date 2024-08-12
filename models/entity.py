@@ -29,7 +29,7 @@ class UserRegister(BaseModel):
 
 class Basic(BaseModel):
     article_title: str
-    article_base: list
+    article_choices: list
 
 
 class Article(BaseModel):
