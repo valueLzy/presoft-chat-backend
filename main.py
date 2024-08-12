@@ -37,25 +37,23 @@ def init_flask():
     @app.post("/user/login")
     def login(user: UserLogin):
         # 获取用户及其菜单信息
-        user_info = get_user_with_menus(user.username, md5_encrypt(user.password), user.language)
+        result = get_user_with_menus(user.username, md5_encrypt(user.password), user.language)
 
-        if not user_info:
+        if not result:
             return JSONResponse(status_code=404, content={"message": "用户名或密码不存在"})
 
-        # 假设返回的用户信息是列表形式，并且列表中只有一个元素
-        user_data = user_info[0]
-
-        # 将菜单名称从字符串转换为列表
-        menu_names = user_data[3].split(',')
+        # 提取用户信息和菜单信息
+        user_info = result["user_info"]
+        menu_list = result["menuList"]
 
         # 构建返回的数据结构
         return JSONResponse(content={
-            "userId": user_data[0],
-            "userName": user_data[1],
-            "roles": user_data[2],
-            "menuName": menu_names,
-            "desc": user_data[4],
-            "password": user_data[5]
+            "userId": user_info[0],
+            "userName": user_info[1],
+            "roles": user_info[2],
+            "desc": user_info[3],
+            "password": user_info[4],
+            "menuList": menu_list
         })
 
     # 注册
