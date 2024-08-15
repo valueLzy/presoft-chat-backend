@@ -8,6 +8,7 @@ import openpyxl
 import uvicorn
 from fastapi import FastAPI, WebSocket
 from openpyxl.utils import get_column_letter
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
@@ -32,10 +33,18 @@ from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edi
 
 def init_flask():
     app = FastAPI()
-
+    #前端跨域 添加 CORS 中间件
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # 允许所有来源，或者指定特定的源列表
+        allow_credentials=True,
+        allow_methods=["*"],  # 允许所有方法（如GET、POST等）
+        allow_headers=["*"],  # 允许所有请求头
+    )
     # 登录
-    @app.post("/user/login")
+    @app.post("/api/user/login")
     def login(user: UserLogin):
+        print(user)
         # 获取用户及其菜单信息
         result = get_user_with_menus(user.username, md5_encrypt(user.password), user.language)
 
@@ -45,7 +54,9 @@ def init_flask():
         # 提取用户信息和菜单信息
         user_info = result["user_info"]
         menu_list = result["menuList"]
-
+        tokenstr = user_info[0]+user.username + user.password
+        # 生成Token
+        token = md5_encrypt(tokenstr)
         # 构建返回的数据结构
         return JSONResponse(content={
             "userId": user_info[0],
@@ -53,11 +64,12 @@ def init_flask():
             "roles": user_info[2],
             "desc": user_info[3],
             "password": user_info[4],
-            "menuList": menu_list
+            "menuList": menu_list,
+            "token":token
         })
 
     # 注册
-    @app.post("/user/register")
+    @app.post("/api/user/register")
     def register(user: UserRegister):
         # 获取用户及密码
         user_name = user.username
@@ -71,20 +83,24 @@ def init_flask():
             return JSONResponse(status_code=200, content={"message": "success"})
 
     # 普通对话
-    @app.websocket("/common_chat/{v1}")
+    @app.websocket("/api/common_chat/{v1}")
     async def common_chat(websocket: WebSocket, v1: str):
+
         manager = ConnectionManager()
         await manager.connect(websocket)
         try:
             data = await websocket.receive_text()
             params = Question.parse_raw(data)
+            print(params)
             prompt = params.prompt
             history = params.history
             history.append({"content": prompt, "role": "user"})
             temperature = params.temperature
-
+            aaa = ""
             answer = glm4_9b_chat_ws(history, temperature)
             for chunk in answer:
+                aaa += str(chunk.choices[0].delta.content)
+                print(aaa)
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
@@ -95,12 +111,13 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 论文---获取关键词
-    @app.post("/write/get_keywords")
+    @app.post("/api/write/get_keywords")
     def get_write_keywords():
         try:
             res = get_unique_field_values("damage_explosion_v2", "type")
+            keywords_list = [{"name": item, "checked": False} for item in res]
             return ResponseEntity(
-                message=res,
+                message=keywords_list,
                 status_code=200
             )
         except Exception as e:
@@ -110,12 +127,13 @@ def init_flask():
             )
 
     # 论文---生成大纲
-    @app.post("/write/get_basic")
+    @app.post("/api/write/get_basic")
     def get_basic(basic: Basic):
+        print(basic)
         return get_outline(basic.article_title, 0.7, list_to_query(basic.article_choices))
 
     # 论文---生成论文
-    @app.websocket("/write/get_article/{v1}")
+    @app.websocket("/api/write/get_article/{v1}")
     async def get_article(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
@@ -179,7 +197,7 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 论文---修改章节
-    @app.websocket("/write/edit_article/{v1}")
+    @app.websocket("/api/write/edit_article/{v1}")
     async def edit_article(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
@@ -200,7 +218,7 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 日语修正-对话
-    @app.websocket("/correctJa/chat/{v1}")
+    @app.websocket("/api/correctJa/chat/{v1}")
     async def correct_ja_chat(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
@@ -220,7 +238,7 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 日语修正-文件
-    @app.websocket("/correctJa/file/{v1}")
+    @app.websocket("/api/correctJa/file/{v1}")
     async def correct_ja_file(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
@@ -336,7 +354,7 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 文件对话-下载文件
-    @app.post("/file_chat/upload")
+    @app.post("/api/file_chat/upload")
     def file_chat_upload(file: Filechat1):
         try:
             user_id = "_" + file.userid
@@ -372,7 +390,7 @@ def init_flask():
             )
 
     # 文件对话-用户对话
-    @app.websocket("/file_chat/qa/{v1}")
+    @app.websocket("/api/file_chat/qa/{v1}")
     async def file_chat_qa(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
@@ -406,7 +424,7 @@ def init_flask():
             manager.disconnect(websocket)
 
     # 知识库-获取知识库列表
-    @app.post("/knowledge/get_list")
+    @app.post("/api/knowledge/get_list")
     def get_knowledge_list(knowledge: GetKnowledge):
         keys = ['id', 'name', 'description', 'milvus_name', 'graph_name', 'user_id', 'create_time']
         knowledge_list = get_knowledge_by_user(knowledge.userid)
@@ -419,7 +437,7 @@ def init_flask():
         )
 
     # 知识库-新建知识库
-    @app.post("/knowledge/create_database")
+    @app.post("/api/knowledge/create_database")
     def create_knowledge(knowledge: Knowledge):
         try:
             res = get_knowledge_by_user(knowledge.userid)
@@ -448,7 +466,7 @@ def init_flask():
             )
 
     # 知识库-删除知识库
-    @app.post("/knowledge/drop_database")
+    @app.post("/api/knowledge/drop_database")
     def drop_knowledge(knowledge: DelKnowledge):
         try:
             mg_name = knowledge.name + "_" + knowledge.userid

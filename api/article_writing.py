@@ -118,8 +118,8 @@ def get_outline(query, temperature, filter_expr):
     rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr)
     messages = [
         {"content": prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)), "role": "user"}]
-    ai_say = glm4_9b_chat_http(messages,temperature)
-
+    ai_say = glm4_9b_chat_http(messages, temperature)
+    print(extract_bracket_content(ai_say),rerank_filtered_result_file)
     return {
         'json': extract_bracket_content(ai_say),
         'ref_file': rerank_filtered_result_file

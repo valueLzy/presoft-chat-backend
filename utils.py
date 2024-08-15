@@ -1,7 +1,9 @@
 import hashlib
 import os
 import uuid
+from datetime import datetime, timedelta
 
+import jwt
 import requests
 from docx import Document
 from docx.shared import RGBColor
@@ -170,4 +172,4 @@ def matching_milvus_paragraph(text, collection_name, matches_number):
 
 if __name__ == '__main__':
     # print(put_file("vue-file", "aaaa.xlsx", "data/aaaa.xlsx"))
-    print(md5_encrypt("111111"))
+    print(md5_encrypt("123456"))
