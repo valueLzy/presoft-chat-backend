@@ -26,9 +26,9 @@ from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
-    replace_text_in_docx, parse_file_other, parse_file_pdf
+    replace_text_in_docx, parse_file_other, parse_file_pdf, matching_milvus_paragraph
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge
+    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa
 
 
 def init_flask():
@@ -41,6 +41,7 @@ def init_flask():
         allow_methods=["*"],  # 允许所有方法（如GET、POST等）
         allow_headers=["*"],  # 允许所有请求头
     )
+
     # 登录
     @app.post("/api/user/login")
     def login(user: UserLogin):
@@ -54,7 +55,7 @@ def init_flask():
         # 提取用户信息和菜单信息
         user_info = result["user_info"]
         menu_list = result["menuList"]
-        tokenstr = user_info[0]+user.username + user.password
+        tokenstr = user_info[0] + user.username + user.password
         # 生成Token
         token = md5_encrypt(tokenstr)
         # 构建返回的数据结构
@@ -65,7 +66,7 @@ def init_flask():
             "desc": user_info[3],
             "password": user_info[4],
             "menuList": menu_list,
-            "token":token
+            "token": token
         })
 
     # 注册
@@ -483,6 +484,30 @@ def init_flask():
                 status_code=500
             )
 
+    # 对话-知识库
+    @app.websocket("/api/knowledge/qa/{v1}")
+    async def knowledge_qa(websocket: WebSocket, v1: str):
+        manager = ConnectionManager()
+        await manager.connect(websocket)
+        try:
+            data = await websocket.receive_text()
+            params = KnowledgeQa.parse_raw(data)
+            history = params.history
+            question = params.question
+            knowledge_name = params.knowledge_name
+            user_id = params.user_id
+            res = matching_milvus_paragraph(question, knowledge_name, 3)
+            messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'), "role": "user"}
+            history.append(messages)
+            answer = glm4_9b_chat_ws(history, 0.1)
+            for chunk in answer:
+                await manager.send_personal_message(json.dumps({
+                    "answer": chunk.choices[0].delta.content
+                }, ensure_ascii=False), websocket)
+        except Exception as e:
+            print(e)
+        finally:
+            manager.disconnect(websocket)
     return app
 
 

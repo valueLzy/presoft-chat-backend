@@ -11,7 +11,8 @@ from fastapi import Body
 from minio import Minio
 from pymilvus import FieldSchema, DataType, CollectionSchema
 
-from llm.embeddings import bg3_m3
+from knowledge.dataset_api import matching_paragraph
+from llm.embeddings import bg3_m3, rerank
 from milvus.milvus_tools import search_milvus
 
 minio_client = Minio(
@@ -164,10 +165,18 @@ def parse_file_pdf(bucket_name: str, file_name: str) -> list:
         return []
 
 
-def matching_milvus_paragraph(text, collection_name, matches_number):
-    res = search_milvus(bg3_m3(text), collection_name, matches_number)
-
-    return res
+def matching_milvus_paragraph(query, collection_name, matches_number):
+    ref = matching_paragraph(query, collection_name, 1000)
+    filtered_results = []
+    for result in ref:
+        filtered_result = [res.entity.text for res in result if res.score > 0]
+        filtered_results.append(filtered_result)
+    a = rerank(query, filtered_results[0], matches_number)
+    rerank_results = [y['index'] for y in a if y['relevance_score'] > 0.7]
+    rerank_filtered_result_text = []
+    for index in rerank_results:
+        rerank_filtered_result_text.append(ref[0][index].fields['text'] + '\n')
+    return rerank_filtered_result_text
 
 
 if __name__ == '__main__':

@@ -77,3 +77,11 @@ class GetKnowledge(BaseModel):
 class DelKnowledge(BaseModel):
     userid: str
     name: str
+
+
+class KnowledgeQa(BaseModel):
+    history: List[dict[str, str]]
+    question: str
+    userid: str
+    knowledge_name: str
+
