@@ -509,7 +509,6 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-
     return app
 
 
