@@ -495,7 +495,7 @@ def init_flask():
             history = params.history
             question = params.question
             knowledge_name = params.knowledge_name
-            user_id = params.user_id
+            user_id = params.userid
             res = matching_milvus_paragraph(question, knowledge_name, 3)
             messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'), "role": "user"}
             history.append(messages)
