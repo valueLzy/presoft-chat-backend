@@ -354,7 +354,7 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
-    # 文件对话-下载文件
+    # 文件对话-上传文件
     @app.post("/api/file_chat/upload")
     def file_chat_upload(file: Filechat1):
         try:
