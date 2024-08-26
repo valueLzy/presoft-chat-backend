@@ -21,7 +21,7 @@ from llm.embeddings import bg3_m3, rerank
 
 from llm.glm4 import glm4_9b_chat_ws
 from milvus.milvus_tools import create_milvus, insert_milvus, get_milvus_collections_info, del_entity, \
-    get_unique_field_values, delete_milvus
+    get_unique_field_values, delete_milvus, del_entity_by_file
 from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
@@ -29,7 +29,7 @@ from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_te
     replace_text_in_docx, parse_file_other, parse_file_pdf, matching_milvus_paragraph
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
     JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
-    KnowledgeFile
+    KnowledgeFile, KnowledgeFileDel
 
 
 def init_flask():
@@ -498,7 +498,8 @@ def init_flask():
             knowledge_name = params.knowledge_name
             user_id = params.userid
             res = matching_milvus_paragraph(question, knowledge_name, 3)
-            messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'), "role": "user"}
+            messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'),
+                        "role": "user"}
             history.append(messages)
             answer = glm4_9b_chat_ws(history, 0.1)
             for chunk in answer:
@@ -524,6 +525,22 @@ def init_flask():
                 message=e,
                 status_code=500
             )
+
+    # 知识库-获取知识库内文件列表删除
+    @app.post("/api/knowledge/del_file")
+    def del_file(knowledge: KnowledgeFileDel):
+        try:
+            del_entity_by_file(knowledge.knowledge_name, knowledge.file_name)
+            return ResponseEntity(
+                message="success",
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message=e,
+                status_code=500
+            )
+
     return app
 
 

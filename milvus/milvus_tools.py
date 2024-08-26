@@ -178,5 +178,11 @@ def get_unique_field_values(collection_name, field_name):
     return field_values
 
 
+def del_entity_by_file(collection_name, file_name):
+    collection = Collection(collection_name)
+    expr = f"file_name == '{file_name}'"
+    collection.delete(expr)
+
+
 if __name__ == '__main__':
     delete_milvus('1231')

@@ -89,3 +89,8 @@ class KnowledgeQa(BaseModel):
 class KnowledgeFile(BaseModel):
     knowledge_name: str
 
+
+class KnowledgeFileDel(BaseModel):
+    knowledge_name: str
+    file_name: str
+
