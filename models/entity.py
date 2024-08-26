@@ -85,3 +85,7 @@ class KnowledgeQa(BaseModel):
     userid: str
     knowledge_name: str
 
+
+class KnowledgeFile(BaseModel):
+    knowledge_name: str
+

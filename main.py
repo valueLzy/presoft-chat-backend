@@ -28,7 +28,8 @@ from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
     replace_text_in_docx, parse_file_other, parse_file_pdf, matching_milvus_paragraph
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
-    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa
+    JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
+    KnowledgeFile
 
 
 def init_flask():
@@ -509,6 +510,20 @@ def init_flask():
         finally:
             manager.disconnect(websocket)
 
+    # 知识库-获取知识库内文件列表
+    @app.post("/api/knowledge/get_files")
+    def get_files(knowledge: KnowledgeFile):
+        try:
+            res = get_unique_field_values(knowledge.knowledge_name, "file_name")
+            return ResponseEntity(
+                message=res,
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message=e,
+                status_code=500
+            )
     return app
 
 
