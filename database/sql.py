@@ -244,3 +244,17 @@ def delete_knowledge_by_name_and_user(name, user_id):
         return execute_query(query, params)
     except Exception as e:
         raise e
+
+
+def query_history_by_user_and_type(user_id, type):
+    try:
+        query = """
+        SELECT `user_say`, `ai_say`
+        FROM `history_qa`
+        WHERE `user_id` = %s AND `type` = %s
+        ORDER BY `time` DESC;
+        """
+        params = (user_id, type)
+        return execute_query(query, params)
+    except Exception as e:
+        raise e

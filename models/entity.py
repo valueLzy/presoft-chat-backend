@@ -100,3 +100,7 @@ class KnowledgeFileUpload(BaseModel):
     bucket_name: str
     file_name: str
 
+
+class HistoryList(BaseModel):
+    user_id: str
+    type: str

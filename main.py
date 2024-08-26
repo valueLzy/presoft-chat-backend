@@ -15,7 +15,8 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
     list_to_query, revise_article
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
-    get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa
+    get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type, \
+    query_history_by_user_and_type_all
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
@@ -29,7 +30,7 @@ from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_te
     replace_text_in_docx, parse_file_other, parse_file_pdf, matching_milvus_paragraph
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
     JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
-    KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload
+    KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload, HistoryList
 
 
 def init_flask():
@@ -83,6 +84,20 @@ def init_flask():
             insert_user(str(uuid.uuid4()), user_name, '用户', '1,2,3,4,5', '', user_password, user.company,
                         user.nationality)
             return JSONResponse(status_code=200, content={"message": "success"})
+
+    @app.post("/api/history/get_list")
+    def get_history_list(history: HistoryList):
+        try:
+            res = query_history_by_user_and_type(history.user_id, history.type)
+            return ResponseEntity(
+                message=res,
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message=str(e),
+                status_code=500
+            )
 
     # 普通对话
     @app.websocket("/api/common_chat/{v1}")
