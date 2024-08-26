@@ -15,8 +15,7 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
     list_to_query, revise_article
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
-    get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type, \
-    query_history_by_user_and_type_all
+    get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
@@ -89,8 +88,16 @@ def init_flask():
     def get_history_list(history: HistoryList):
         try:
             res = query_history_by_user_and_type(history.user_id, history.type)
+            history = []
+            for item in res:
+                data = [
+                    {"role": "user", "content": item[0]},
+                    {"role": "assistant", "content": item[1]},
+                    {"time": item[2]}
+                ]
+                history.append(data)
             return ResponseEntity(
-                message=res,
+                message=history,
                 status_code=200
             )
         except Exception as e:
