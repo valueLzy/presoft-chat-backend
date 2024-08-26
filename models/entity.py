@@ -94,3 +94,9 @@ class KnowledgeFileDel(BaseModel):
     knowledge_name: str
     file_name: str
 
+
+class KnowledgeFileUpload(BaseModel):
+    knowledge_name: str
+    bucket_name: str
+    file_name: str
+

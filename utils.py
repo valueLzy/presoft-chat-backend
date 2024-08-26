@@ -11,6 +11,7 @@ from fastapi import Body
 from minio import Minio
 from pymilvus import FieldSchema, DataType, CollectionSchema
 
+from database.sql import insert_history_qa
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 from milvus.milvus_tools import search_milvus

@@ -15,7 +15,7 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
     list_to_query, revise_article
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
-    get_knowledge_by_user, delete_knowledge_by_name_and_user
+    get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
@@ -29,7 +29,7 @@ from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_te
     replace_text_in_docx, parse_file_other, parse_file_pdf, matching_milvus_paragraph
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
     JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
-    KnowledgeFile, KnowledgeFileDel
+    KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload
 
 
 def init_flask():
@@ -106,7 +106,7 @@ def init_flask():
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
-
+            insert_history_qa(v1, prompt, aaa, "dialog")
         except Exception as e:
             print(e)
         finally:
@@ -229,11 +229,13 @@ def init_flask():
             params = JachatCorrect.parse_raw(data)
             prompt = params.prompt
             answer = del_japanese_prompt_ws(prompt)
+            ai_say = ""
             for chunk in answer:
+                ai_say += chunk.choices[0].delta.content
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
-
+            insert_history_qa(v1, prompt, ai_say, "revise")
         except Exception as e:
             print(e)
         finally:
@@ -277,17 +279,16 @@ def init_flask():
                                     - **修正後**: {new_cell_value}
                                 '''
                                 }, ensure_ascii=False), websocket)
+                                insert_history_qa(v1, "中间过程", f'''
+                                    修正：
+                                    - **シート**: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}
+                                    - **修正前**: {cell_value}
+                                    - **修正後**: {new_cell_value}
+                                ''', "revise")
                                 cell.value = new_value
                     # 如果工作表被处理，保存修改
                     if processed:
                         workbook.save(new_file_path)
-                put_file("modify-ja-file", f"{file_dir}.{file_type}", new_file_path)
-                shutil.rmtree(f"./data/{file_dir}")
-                await manager.send_personal_message(json.dumps({
-                    "old_file_name": object_name,
-                    "new_file_name": f"{file_dir}.{file_type}",
-                    "bucket_name": "modify-ja-file"
-                }, ensure_ascii=False), websocket)
             if file_type == 'txt':
                 # 读取文件内容
                 with open(file_path, 'r', encoding='utf-8') as file:
@@ -306,7 +307,10 @@ def init_flask():
                                - **修正後**: {aisay_value}
                            '''
                         }, ensure_ascii=False), websocket)
-
+                        insert_history_qa(v1, "中间过程", f'''
+                               修正：
+                               - **修正前**: {aisay_item}
+                               - **修正後**: {aisay_value}''', "revise")
                 # 将修改后的文本数组重新组合成字符串
                 new_text = '\n\n'.join(text_array)
                 # 指定一个绝对路径
@@ -314,13 +318,6 @@ def init_flask():
                 # 创建一个txt文件，写入new_text
                 with open(output_path, 'w', encoding='utf-8') as output_file:
                     output_file.write(new_text)
-                put_file("modify-ja-file", f"new_{file_dir}.{file_type}", output_path)
-                shutil.rmtree(f"./data/{file_dir}")
-                await manager.send_personal_message(json.dumps({
-                    "old_file_name": object_name,
-                    "new_file_name": f"new_{file_dir}.{file_type}",
-                    "bucket_name": "modify-ja-file"
-                }, ensure_ascii=False), websocket)
             if file_type == 'doc' or file_type == 'docx':
                 replacements = {}
                 red_list = get_red_text_from_docx(file_path)
@@ -337,19 +334,24 @@ def init_flask():
                             - **修正後**: {aisay_value}
                         '''
                         }, ensure_ascii=False), websocket)
+                        insert_history_qa(v1, "中间过程", f'''
+                            修正：
+                            - **修正前**: {aisay_item}
+                            - **修正後**: {aisay_value}
+                        ''', "revise")
                         replace_text_in_docx(file_path, replacements, new_file_path)
-                    put_file("modify-ja-file", f"{file_dir}.{file_type}", new_file_path)
-                    # 删除 file_dir 文件夹及其所有内容
-                    shutil.rmtree(f"./data/{file_dir}")
-                    await manager.send_personal_message(json.dumps({
-                        "old_file_name": object_name,
-                        "new_file_name": new_file_path,
-                        "bucket_name": "modify-ja-file"
-                    }, ensure_ascii=False), websocket)
                 else:
                     await manager.send_personal_message(json.dumps({
                         "content": f'''翻訳が必要なテキストは検出されませんでした'''
                     }, ensure_ascii=False), websocket)
+            put_file("modify-ja-file", f"{file_dir}.{file_type}", new_file_path)
+            shutil.rmtree(f"./data/{file_dir}")
+            await manager.send_personal_message(json.dumps({
+                "old_file_name": object_name,
+                "new_file_name": f"{file_dir}.{file_type}",
+                "bucket_name": "modify-ja-file"
+            }, ensure_ascii=False), websocket)
+            insert_history_qa(v1, "下载文件", f"modify-ja-file/{file_dir}.{file_type}", "revise")
         except Exception as e:
             print(e)
         finally:
@@ -416,10 +418,13 @@ def init_flask():
                                                           language=language), "role": "user"}
             history.append(message)
             answer = glm4_9b_chat_ws(history, 0.7)
+            ai_say = ""
             for chunk in answer:
+                ai_say += chunk.choices[0].delta.content
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
+            insert_history_qa(v1, question, ai_say, "fileDialog")
         except Exception as e:
             print(e)
         finally:
@@ -502,10 +507,13 @@ def init_flask():
                         "role": "user"}
             history.append(messages)
             answer = glm4_9b_chat_ws(history, 0.1)
+            ai_say = ""
             for chunk in answer:
+                ai_say += chunk.choices[0].delta.content
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
+            insert_history_qa(v1, question, ai_say, "questions")
         except Exception as e:
             print(e)
         finally:
@@ -531,6 +539,35 @@ def init_flask():
     def del_file(knowledge: KnowledgeFileDel):
         try:
             del_entity_by_file(knowledge.knowledge_name, knowledge.file_name)
+            return ResponseEntity(
+                message="success",
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message=e,
+                status_code=500
+            )
+
+    # 知识库-知识库内文件上传
+    @app.post("/api/knowledge/upload_file")
+    def upload_file(knowledge: KnowledgeFileUpload):
+        try:
+            knowledge_name = knowledge.knowledge_name
+            file_name = knowledge.file_name
+            bucket_name = knowledge.bucket_name
+            file_type = os.path.splitext(file_name)[1]
+            if file_type == 'pdf':
+                text_splitter = parse_file_pdf(bucket_name, file_name)
+            else:
+                text_splitter = parse_file_other(bucket_name, file_name)
+            for text in text_splitter:
+                data = [{
+                    'text': text,
+                    'file_name': file_name,
+                    'embeddings': bg3_m3(text)
+                }]
+                insert_milvus(data, knowledge_name)
             return ResponseEntity(
                 message="success",
                 status_code=200

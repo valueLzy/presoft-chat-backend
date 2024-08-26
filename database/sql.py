@@ -1,3 +1,6 @@
+import uuid
+from datetime import datetime
+
 from database.db import execute_query
 
 
@@ -180,6 +183,31 @@ def insert_knowledge(id, name, description, milvus_name, graph_name, user_id, cr
         );
         """
         params = (id, name, description, milvus_name, graph_name, user_id, create_time)
+        return execute_query(query, params)
+    except Exception as e:
+        raise e
+
+
+def insert_history_qa(user_id, user_say, ai_say, type):
+    try:
+        query = """
+        INSERT INTO `history_qa` (
+            `id`, 
+            `user_id`, 
+            `user_say`, 
+            `ai_say`, 
+            `type`, 
+            `time`
+        ) VALUES (
+            %s, 
+            %s, 
+            %s, 
+            %s, 
+            %s, 
+            %s
+        );
+        """
+        params = (str(uuid.uuid4()), user_id, user_say, ai_say, type, datetime.now())
         return execute_query(query, params)
     except Exception as e:
         raise e
