@@ -526,7 +526,7 @@ def init_flask():
                 status_code=500
             )
 
-    # 知识库-获取知识库内文件列表删除
+    # 知识库-知识库内文件列表删除
     @app.post("/api/knowledge/del_file")
     def del_file(knowledge: KnowledgeFileDel):
         try:
