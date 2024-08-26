@@ -545,7 +545,7 @@ def init_flask():
     @app.post("/api/knowledge/get_files")
     def get_files(knowledge: KnowledgeFile):
         try:
-            res = get_unique_field_values(knowledge.knowledge_name, "file_name")
+            res = get_unique_field_values(knowledge.knowledge_name+"_"+knowledge.user_id, "file_name")
             return ResponseEntity(
                 message=res,
                 status_code=200
