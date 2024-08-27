@@ -283,3 +283,17 @@ def query_knowledge_file_by_knowledge_id_and_file_name(knowledge_name, file_name
         return execute_query(query, params)
     except Exception as e:
         raise e
+
+
+def delete_knowledge_file_by_name_and_file(knowledge_name, file_name):
+    try:
+        query = """
+        DELETE FROM 
+            knowledge_files
+        WHERE 
+            knowledge_name = %s AND file_name = %s;
+        """
+        params = (knowledge_name, file_name)
+        return execute_query(query, params)
+    except Exception as e:
+        raise e
