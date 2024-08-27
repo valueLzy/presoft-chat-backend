@@ -561,7 +561,8 @@ def init_flask():
     @app.post("/api/knowledge/del_file")
     def del_file(knowledge: KnowledgeFileDel):
         try:
-            del_entity_by_file(knowledge.knowledge_name, knowledge.file_name)
+            knowledge_name = knowledge.knowledge_name + "_" + knowledge.user_id
+            del_entity_by_file(knowledge_name, knowledge.file_name)
             return ResponseEntity(
                 message="success",
                 status_code=200

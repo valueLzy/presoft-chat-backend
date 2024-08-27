@@ -94,6 +94,7 @@ class KnowledgeFile(BaseModel):
 class KnowledgeFileDel(BaseModel):
     knowledge_name: str
     file_name: str
+    user_id: str
 
 
 class KnowledgeFileUpload(BaseModel):
