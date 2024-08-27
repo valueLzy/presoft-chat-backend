@@ -100,7 +100,6 @@ class KnowledgeFileUpload(BaseModel):
     knowledge_name: str
     minio_bucket_name: str
     minio_file_name: str
-    knowledge_id: str
     file_name: str
     user_id: str
 
@@ -108,3 +107,9 @@ class KnowledgeFileUpload(BaseModel):
 class HistoryList(BaseModel):
     user_id: str
     type: str
+
+
+class KnowledgeFileList(BaseModel):
+    knowledge_name: str
+    file_name: str
+    user_id: str

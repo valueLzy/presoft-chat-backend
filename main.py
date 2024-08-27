@@ -16,13 +16,13 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
     get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type, \
-    insert_knowledge_file
+    insert_knowledge_file, query_knowledge_file_by_knowledge_id_and_file_name
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
 from llm.glm4 import glm4_9b_chat_ws, glm4_9b_chat_long_http
 from milvus.milvus_tools import create_milvus, insert_milvus, get_milvus_collections_info, del_entity, \
-    get_unique_field_values, delete_milvus, del_entity_by_file
+    get_unique_field_values, delete_milvus, del_entity_by_file, query_milvus_by_file_name
 from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
@@ -30,7 +30,7 @@ from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_te
     replace_text_in_docx, parse_file_other, parse_file_pdf, matching_milvus_paragraph, get_graph
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
     JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
-    KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload, HistoryList
+    KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload, HistoryList, KnowledgeFileList
 
 
 def init_flask():
@@ -576,7 +576,7 @@ def init_flask():
     @app.post("/api/knowledge/upload_file")
     def upload_file(knowledge: KnowledgeFileUpload):
         try:
-            knowledge_name = knowledge.knowledge_name+"_"+knowledge.user_id
+            knowledge_name = knowledge.knowledge_name + "_" + knowledge.user_id
             file_name = knowledge.minio_file_name
             bucket_name = knowledge.minio_bucket_name
             file_type = os.path.splitext(file_name)[1]
@@ -598,9 +598,31 @@ def init_flask():
             message = [{"content": prompt, "role": "user"}]
             graph_html = get_graph(bucket_name, file_name)
             outline = glm4_9b_chat_long_http(message, 0.2)
-            insert_knowledge_file(knowledge.knowledge_id, knowledge.file_name, graph_html, outline)
+            insert_knowledge_file(knowledge_name, knowledge.file_name, graph_html, outline)
             return ResponseEntity(
                 message="success",
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message=e,
+                status_code=500
+            )
+
+    # 知识库-文件内列表
+    @app.post("/api/knowledge/file_list")
+    def get_file_list(knowledge: KnowledgeFileList):
+        try:
+            knowledge_name = knowledge.knowledge_name + "_" + knowledge.user_id
+            file_name = knowledge.file_name
+            text_splitter = query_milvus_by_file_name(knowledge_name, file_name)
+            graph = query_knowledge_file_by_knowledge_id_and_file_name(knowledge_name, file_name)
+            res = {
+                "text_splitter": text_splitter,
+                "graph": graph
+            }
+            return ResponseEntity(
+                message=res,
                 status_code=200
             )
         except Exception as e:

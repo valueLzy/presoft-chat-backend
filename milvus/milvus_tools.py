@@ -151,6 +151,15 @@ def query_milvus(collection_name):
     return res
 
 
+def query_milvus_by_file_name(collection_name, file_name):
+    collection = Collection(collection_name)
+    res = collection.query(
+        expr=f"file_name == '{file_name}'",
+        output_fields=["text"],
+    )
+    return res
+
+
 def del_entity(collection_name):
     collection = Collection(collection_name)
     expr = 'id > 0'

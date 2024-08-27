@@ -260,13 +260,26 @@ def query_history_by_user_and_type(user_id, type):
         raise e
 
 
-def insert_knowledge_file(knowledge_id, file_name, graph, outline):
+def insert_knowledge_file(knowledge_name, file_name, graph, outline):
     try:
         query = """
-        INSERT INTO `knowledge_files` (`id`, `knowledge_id`, `file_name`, `graph`, `outline`)
+        INSERT INTO `knowledge_files` (`id`, `knowledge_name`, `file_name`, `graph`, `outline`)
         VALUES (%s, %s, %s, %s, %s);
         """
-        params = (str(uuid.uuid4()), knowledge_id, file_name, graph, outline)
+        params = (str(uuid.uuid4()), knowledge_name, file_name, graph, outline)
+        return execute_query(query, params)
+    except Exception as e:
+        raise e
+
+
+def query_knowledge_file_by_knowledge_id_and_file_name(knowledge_name, file_name):
+    try:
+        query = """
+        SELECT `graph`, `outline`
+        FROM `knowledge_files`
+        WHERE `knowledge_name` = %s AND `file_name` = %s;
+        """
+        params = (knowledge_name, file_name)
         return execute_query(query, params)
     except Exception as e:
         raise e
