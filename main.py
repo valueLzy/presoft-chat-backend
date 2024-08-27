@@ -16,7 +16,7 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
     get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type, \
-    insert_knowledge_file, query_knowledge_file_by_knowledge_id_and_file_name
+    insert_knowledge_file, query_knowledge_file_by_knowledge_id_and_file_name, delete_knowledge_file_by_name_and_file
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
@@ -563,6 +563,7 @@ def init_flask():
         try:
             knowledge_name = knowledge.knowledge_name + "_" + knowledge.user_id
             del_entity_by_file(knowledge_name, knowledge.file_name)
+            delete_knowledge_file_by_name_and_file(knowledge_name, knowledge.file_name)
             return ResponseEntity(
                 message="success",
                 status_code=200
