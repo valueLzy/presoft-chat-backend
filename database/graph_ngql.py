@@ -20,7 +20,7 @@ def create_nebula_space_and_schema(space_name):
             sess.execute(f'''
                 CREATE SPACE `{space_name}` (partition_num = 1, replica_factor = 1, charset = utf8, collate = utf8_bin, vid_type = FIXED_STRING(256));
                 USE `{space_name}`;
-                CREATE TAG `entity` ( `name` string NULL, `belong_file_name` string NULL) ttl_duration = 0, ttl_col = "";
+                CREATE TAG `entity` ( `name` string NULL) ttl_duration = 0, ttl_col = "";
                 CREATE EDGE `relationship` ( `relationship` string NULL) ttl_duration = 0, ttl_col = "";
                 CREATE TAG INDEX `entity_index` ON `entity` ( `name`(256));
             ''')
@@ -51,4 +51,5 @@ def drop_space(space_name):
 
 
 # 示例调用
-drop_space('my_space')
+if __name__ == '__main__':
+    create_nebula_space_and_schema('test')

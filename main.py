@@ -15,18 +15,19 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
     list_to_query, revise_article
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
-    get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type
+    get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type, \
+    insert_knowledge_file
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
-from llm.glm4 import glm4_9b_chat_ws
+from llm.glm4 import glm4_9b_chat_ws, glm4_9b_chat_long_http
 from milvus.milvus_tools import create_milvus, insert_milvus, get_milvus_collections_info, del_entity, \
     get_unique_field_values, delete_milvus, del_entity_by_file
 from prompt import file_chat_prompt
 from prompts import del_japanese_prompt, del_japanese_prompt_ws
 from util.websocket_utils import ConnectionManager
 from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_text_from_docx, \
-    replace_text_in_docx, parse_file_other, parse_file_pdf, matching_milvus_paragraph
+    replace_text_in_docx, parse_file_other, parse_file_pdf, matching_milvus_paragraph, get_graph
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
     JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
     KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload, HistoryList
@@ -545,7 +546,7 @@ def init_flask():
     @app.post("/api/knowledge/get_files")
     def get_files(knowledge: KnowledgeFile):
         try:
-            res = get_unique_field_values(knowledge.knowledge_name+"_"+knowledge.user_id, "file_name")
+            res = get_unique_field_values(knowledge.knowledge_name + "_" + knowledge.user_id, "file_name")
             return ResponseEntity(
                 message=res,
                 status_code=200
@@ -575,11 +576,11 @@ def init_flask():
     @app.post("/api/knowledge/upload_file")
     def upload_file(knowledge: KnowledgeFileUpload):
         try:
-            knowledge_name = knowledge.knowledge_name
-            file_name = knowledge.file_name
-            bucket_name = knowledge.bucket_name
+            knowledge_name = knowledge.knowledge_name+"_"+knowledge.user_id
+            file_name = knowledge.minio_file_name
+            bucket_name = knowledge.minio_bucket_name
             file_type = os.path.splitext(file_name)[1]
-            if file_type == 'pdf':
+            if file_type == '.pdf':
                 text_splitter = parse_file_pdf(bucket_name, file_name)
             else:
                 text_splitter = parse_file_other(bucket_name, file_name)
@@ -590,6 +591,14 @@ def init_flask():
                     'embeddings': bg3_m3(text)
                 }]
                 insert_milvus(data, knowledge_name)
+            prompt = f"""
+            {text_splitter}\n\t
+            请你帮我总结上述文本中的大纲，结果不要超过100字，只返回大纲，不需要多余的解释。
+            """
+            message = [{"content": prompt, "role": "user"}]
+            graph_html = get_graph(bucket_name, file_name)
+            outline = glm4_9b_chat_long_http(message, 0.2)
+            insert_knowledge_file(knowledge.knowledge_id, knowledge.file_name, graph_html, outline)
             return ResponseEntity(
                 message="success",
                 status_code=200
@@ -604,4 +613,4 @@ def init_flask():
 
 
 app = init_flask()
-uvicorn.run(app, host='0.0.0.0', port=8001, workers=1, timeout_keep_alive=300)
+uvicorn.run(app, host='0.0.0.0', port=8001, workers=1)

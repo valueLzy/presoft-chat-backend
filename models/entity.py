@@ -98,8 +98,11 @@ class KnowledgeFileDel(BaseModel):
 
 class KnowledgeFileUpload(BaseModel):
     knowledge_name: str
-    bucket_name: str
+    minio_bucket_name: str
+    minio_file_name: str
+    knowledge_id: str
     file_name: str
+    user_id: str
 
 
 class HistoryList(BaseModel):

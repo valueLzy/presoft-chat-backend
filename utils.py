@@ -1,20 +1,25 @@
 import hashlib
 import os
+import shutil
 import uuid
-from datetime import datetime, timedelta
+import IPython
+from llama_index.core import Settings
+from llama_index.core import SimpleDirectoryReader, StorageContext, KnowledgeGraphIndex
+from llama_index.core.graph_stores import SimpleGraphStore
+from llama_index.graph_stores.nebula import NebulaGraphStore
 
-import jwt
+from llm.glm4_llamaindex import GLM4
+from llm.llama_index_embeddings import InstructorEmbeddings
 import requests
 from docx import Document
 from docx.shared import RGBColor
-from fastapi import Body
 from minio import Minio
-from pymilvus import FieldSchema, DataType, CollectionSchema
-
-from database.sql import insert_history_qa
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
-from milvus.milvus_tools import search_milvus
+from pyvis.network import Network
+from IPython.display import display
+
+from llm.zhipuai_llamaindex import BianCangLLM
 
 minio_client = Minio(
     "192.168.1.21:19000",
@@ -37,7 +42,7 @@ def md5_encrypt(password):
     return encrypted_password
 
 
-def download_file(bucket_name: str, file_name: str) -> dict[str, str] | str:
+def download_file(bucket_name: str, file_name: str):
     unique_id = str(uuid.uuid4())
     folder_path = f'./data/{unique_id}'
     os.makedirs(folder_path, exist_ok=True)
@@ -180,6 +185,38 @@ def matching_milvus_paragraph(query, collection_name, matches_number):
     return rerank_filtered_result_text
 
 
+def get_graph(bucket_name, file_name):
+    download_file_res = download_file(bucket_name, file_name)
+    file_dir = download_file_res['file_dir']
+
+    Settings.embed_model = InstructorEmbeddings()
+    Settings.llm = GLM4()
+
+    documents = SimpleDirectoryReader(f"./data/{file_dir}/").load_data()
+
+    graph_store = SimpleGraphStore()
+
+    storage_context = StorageContext.from_defaults(graph_store=graph_store)
+
+    index = KnowledgeGraphIndex.from_documents(documents=documents,
+                                               max_triplets_per_chunk=3,
+                                               storage_context=storage_context,
+                                               include_embeddings=True)
+    g = index.get_networkx_graph()
+    net = Network(notebook=True, cdn_resources="in_line", directed=True)
+    net.from_nx(g)
+    net.show("graph.html")
+    net.save_graph("Knowledge_graph.html")
+    #
+    IPython.display.HTML(filename="./Knowledge_graph.html")
+    with open('./Knowledge_graph.html', 'r', encoding='utf-8') as file:
+        content = file.read()
+    os.remove("./Knowledge_graph.html")
+    os.remove("./graph.html")
+    shutil.rmtree(f"./data/{file_dir}")
+    return content
+
+
 if __name__ == '__main__':
     # print(put_file("vue-file", "aaaa.xlsx", "data/aaaa.xlsx"))
-    print(md5_encrypt("123456"))
+    print(get_graph("vue-file", "入职指南.pdf"))
