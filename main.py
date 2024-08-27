@@ -587,7 +587,7 @@ def init_flask():
             for text in text_splitter:
                 data = [{
                     'text': text,
-                    'file_name': file_name,
+                    'file_name': knowledge.file_name,
                     'embeddings': bg3_m3(text)
                 }]
                 insert_milvus(data, knowledge_name)
