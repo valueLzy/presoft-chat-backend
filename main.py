@@ -42,7 +42,7 @@ def init_flask():
     Settings.embed_model = InstructorEmbeddings()
     Settings.llm = BianCangLLM()
 
-    documents = SimpleDirectoryReader(f"./xiaoming/").load_data()
+    documents = SimpleDirectoryReader(f"./xiyouji/").load_data()
 
     graph_store = SimpleGraphStore()
 
@@ -545,7 +545,7 @@ def init_flask():
             knowledge_name = params.knowledge_name
             user_id = params.userid
             ai_say = ""
-            if knowledge_name == "xiaoming":
+            if knowledge_name == "xiyouji":
                 query_engine = index.as_query_engine(include_text=True,
                                                      response_mode="tree_summarize",
                                                      embedding_mode="hybrid",
@@ -554,6 +554,7 @@ def init_flask():
                 generator = query_engine.query(question).response_gen
                 for chunk in generator:
                     # 在这里处理每个块
+                    ai_say += chunk
                     await manager.send_personal_message(json.dumps({
                         "answer": chunk
                     }, ensure_ascii=False), websocket)
@@ -568,6 +569,7 @@ def init_flask():
                     await manager.send_personal_message(json.dumps({
                         "answer": chunk.choices[0].delta.content
                     }, ensure_ascii=False), websocket)
+            print(ai_say)
             insert_history_qa(v1, question, ai_say, "questions")
         except Exception as e:
             print(e)
