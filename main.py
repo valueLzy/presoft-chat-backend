@@ -302,7 +302,7 @@ def init_flask():
                                     <b>修正後<b/>: {new_cell_value}<br>
                                 '''
                                 }, ensure_ascii=False), websocket)
-                                insert_history_qa(v1, "中间过程", f'''
+                                insert_history_qa(v1, "日语修正-excel", f'''
                                     修正：<br>
                                     <b>シート<b/>: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}<br>
                                     <b>修正前<b/>: {cell_value}<br>
@@ -330,7 +330,7 @@ def init_flask():
                                <b>修正後<b/>: {aisay_value}
                            '''
                         }, ensure_ascii=False), websocket)
-                        insert_history_qa(v1, "中间过程", f'''
+                        insert_history_qa(v1, "日语修正-txt", f'''
                                <b>修正<b/>：<br>
                                <b>修正前<b/>: {aisay_item}<br>
                                <b>修正後<b/>: {aisay_value}
@@ -358,7 +358,7 @@ def init_flask():
                             <b>修正後<b/>: {aisay_value}
                         '''
                         }, ensure_ascii=False), websocket)
-                        insert_history_qa(v1, "中间过程", f'''
+                        insert_history_qa(v1, "日语修正-word", f'''
                             <b>修正<b/>：<br>
                             <b>修正前<b/>: {aisay_item}<br>
                             <b>修正後<b/>: {aisay_value}
@@ -375,7 +375,7 @@ def init_flask():
                 "new_file_name": f"{file_dir}.{file_type}",
                 "bucket_name": "modify-ja-file"
             }, ensure_ascii=False), websocket)
-            insert_history_qa(v1, "下载文件", f"modify-ja-file/{file_dir}.{file_type}", "revise")
+            insert_history_qa(v1, "修改后-下载文件", f"192.168.1.21:19000/modify-ja-file/{file_dir}.{file_type}", "revise")
         except Exception as e:
             print(e)
         finally:
