@@ -451,7 +451,7 @@ def init_flask():
             filtered_result = []
             for result in res:
                 filtered_result = [res.entity.text for res in result if res.score > 0]
-            a = rerank(question, filtered_result, 3)
+            a = rerank(question, filtered_result, 1)
             rerank_results = [y['index'] for y in a if y['relevance_score'] > 0.7]
             rerank_filtered_result = []
             for index in rerank_results:
