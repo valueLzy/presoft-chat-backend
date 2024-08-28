@@ -7,6 +7,8 @@ from datetime import datetime
 import openpyxl
 import uvicorn
 from fastapi import FastAPI, WebSocket
+from llama_index.core import Settings, SimpleDirectoryReader, StorageContext, KnowledgeGraphIndex
+from llama_index.core.graph_stores import SimpleGraphStore
 from openpyxl.utils import get_column_letter
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
@@ -21,6 +23,9 @@ from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
 from llm.glm4 import glm4_9b_chat_ws, glm4_9b_chat_long_http
+from llm.glm4_llamaindex import GLM4
+from llm.llama_index_embeddings import InstructorEmbeddings
+from llm.zhipuai_llamaindex import BianCangLLM
 from milvus.milvus_tools import create_milvus, insert_milvus, get_milvus_collections_info, del_entity, \
     get_unique_field_values, delete_milvus, del_entity_by_file, query_milvus_by_file_name
 from prompt import file_chat_prompt
@@ -34,6 +39,19 @@ from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edi
 
 
 def init_flask():
+    Settings.embed_model = InstructorEmbeddings()
+    Settings.llm = BianCangLLM()
+
+    documents = SimpleDirectoryReader(f"./xiaoming/").load_data()
+
+    graph_store = SimpleGraphStore()
+
+    storage_context = StorageContext.from_defaults(graph_store=graph_store)
+
+    index = KnowledgeGraphIndex.from_documents(documents=documents,
+                                               max_triplets_per_chunk=3,
+                                               storage_context=storage_context,
+                                               include_embeddings=True)
     app = FastAPI()
     #前端跨域 添加 CORS 中间件
     app.add_middleware(
@@ -526,17 +544,30 @@ def init_flask():
             question = params.question
             knowledge_name = params.knowledge_name
             user_id = params.userid
-            res = matching_milvus_paragraph(question, knowledge_name, 3)
-            messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'),
-                        "role": "user"}
-            history.append(messages)
-            answer = glm4_9b_chat_ws(history, 0.1)
             ai_say = ""
-            for chunk in answer:
-                ai_say += chunk.choices[0].delta.content
-                await manager.send_personal_message(json.dumps({
-                    "answer": chunk.choices[0].delta.content
-                }, ensure_ascii=False), websocket)
+            if knowledge_name == "xiaoming":
+                query_engine = index.as_query_engine(include_text=True,
+                                                     response_mode="tree_summarize",
+                                                     embedding_mode="hybrid",
+                                                     similarity_top_k=4,
+                                                     streaming=True)
+                generator = query_engine.query(question).response_gen
+                for chunk in generator:
+                    # 在这里处理每个块
+                    await manager.send_personal_message(json.dumps({
+                        "answer": chunk
+                    }, ensure_ascii=False), websocket)
+            else:
+                res = matching_milvus_paragraph(question, knowledge_name, 3)
+                messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'),
+                            "role": "user"}
+                history.append(messages)
+                answer = glm4_9b_chat_ws(history, 0.1)
+                for chunk in answer:
+                    ai_say += chunk.choices[0].delta.content
+                    await manager.send_personal_message(json.dumps({
+                        "answer": chunk.choices[0].delta.content
+                    }, ensure_ascii=False), websocket)
             insert_history_qa(v1, question, ai_say, "questions")
         except Exception as e:
             print(e)
