@@ -583,22 +583,22 @@ def init_flask():
             file_name = knowledge.minio_file_name
             bucket_name = knowledge.minio_bucket_name
             file_type = os.path.splitext(file_name)[1]
-            # if file_type == '.pdf':
-            #     text_splitter = parse_file_pdf(bucket_name, file_name)
-            # else:
-            #     text_splitter = parse_file_other(bucket_name, file_name)
-            # for text in text_splitter:
-            #     data = [{
-            #         'text': text,
-            #         'file_name': knowledge.file_name,
-            #         'embeddings': bg3_m3(text)
-            #     }]
-            #     insert_milvus(data, knowledge_name)
-            # prompt = f"""
-            # {text_splitter}\n\t
-            # 请你帮我总结上述文本中的大纲，结果不要超过100字，只返回大纲，不需要多余的解释。
-            # """
-            # message = [{"content": prompt, "role": "user"}]
+            if file_type == '.pdf':
+                text_splitter = parse_file_pdf(bucket_name, file_name)
+            else:
+                text_splitter = parse_file_other(bucket_name, file_name)
+            for text in text_splitter:
+                data = [{
+                    'text': text,
+                    'file_name': knowledge.file_name,
+                    'embeddings': bg3_m3(text)
+                }]
+                insert_milvus(data, knowledge_name)
+            prompt = f"""
+            {text_splitter}\n\t
+            请你帮我总结上述文本中的大纲，结果不要超过100字，只返回大纲，不需要多余的解释。
+            """
+            message = [{"content": prompt, "role": "user"}]
             graph_html = get_graph(bucket_name, file_name)
             outline = "1"
             insert_knowledge_file(knowledge_name, knowledge.file_name, graph_html, outline)
