@@ -212,7 +212,7 @@ def get_graph(bucket_name, file_name):
                                                storage_context=storage_context,
                                                include_embeddings=True)
     g = index.graph_store._data.graph_dict
-    return str(convert_to_vis_format(g))
+    return str(convert_to_vis_format(g)).replace("'", "\"")
 
 
 if __name__ == '__main__':
