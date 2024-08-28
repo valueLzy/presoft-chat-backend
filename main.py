@@ -633,7 +633,7 @@ def init_flask():
             """
             message = [{"content": prompt, "role": "user"}]
             graph_html = get_graph(bucket_name, file_name)
-            outline = "1"
+            outline = glm4_9b_chat_long_http(message, 0.2)
             insert_knowledge_file(knowledge_name, knowledge.file_name, graph_html, outline)
             return ResponseEntity(
                 message="success",
