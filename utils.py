@@ -1,12 +1,9 @@
 import hashlib
 import os
-import shutil
 import uuid
-import IPython
 from llama_index.core import Settings
 from llama_index.core import SimpleDirectoryReader, StorageContext, KnowledgeGraphIndex
 from llama_index.core.graph_stores import SimpleGraphStore
-from llama_index.graph_stores.nebula import NebulaGraphStore
 
 from llm.glm4_llamaindex import GLM4
 from llm.llama_index_embeddings import InstructorEmbeddings
@@ -15,11 +12,7 @@ from docx import Document
 from docx.shared import RGBColor
 from minio import Minio
 from knowledge.dataset_api import matching_paragraph
-from llm.embeddings import bg3_m3, rerank
-from pyvis.network import Network
-from IPython.display import display
-
-from llm.zhipuai_llamaindex import BianCangLLM
+from llm.embeddings import  rerank
 
 minio_client = Minio(
     "192.168.1.21:19000",
@@ -185,6 +178,22 @@ def matching_milvus_paragraph(query, collection_name, matches_number):
     return rerank_filtered_result_text
 
 
+def convert_to_vis_format(data):
+    nodes = set()
+    edges = []
+    for from_node, relationships in data.items():
+        nodes.add(from_node)
+        for relationship in relationships:
+            label, to_node = relationship
+            nodes.add(to_node)
+            edges.append({
+                'from': from_node,
+                'to': to_node,
+                'label': label
+            })
+    return edges
+
+
 def get_graph(bucket_name, file_name):
     download_file_res = download_file(bucket_name, file_name)
     file_dir = download_file_res['file_dir']
@@ -202,19 +211,8 @@ def get_graph(bucket_name, file_name):
                                                max_triplets_per_chunk=3,
                                                storage_context=storage_context,
                                                include_embeddings=True)
-    g = index.get_networkx_graph()
-    net = Network(notebook=True, cdn_resources="in_line", directed=True)
-    net.from_nx(g)
-    net.show("graph.html")
-    net.save_graph("Knowledge_graph.html")
-    #
-    IPython.display.HTML(filename="./Knowledge_graph.html")
-    with open('./Knowledge_graph.html', 'r', encoding='utf-8') as file:
-        content = file.read()
-    os.remove("./Knowledge_graph.html")
-    os.remove("./graph.html")
-    shutil.rmtree(f"./data/{file_dir}")
-    return content
+    g = index.graph_store._data.graph_dict
+    return str(convert_to_vis_format(g))
 
 
 if __name__ == '__main__':
