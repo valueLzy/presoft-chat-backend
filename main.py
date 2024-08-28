@@ -296,17 +296,17 @@ def init_flask():
                                 new_cell_value = str(new_value).replace("\n", "")
                                 await manager.send_personal_message(json.dumps({
                                     "content": f'''
-                                    修正：
-                                    - **シート**: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}
-                                    - **修正前**: {cell_value}
-                                    - **修正後**: {new_cell_value}
+                                    修正：<br>
+                                    <b>シート<b/>: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}<br>
+                                    <b>修正前<b/>: {cell_value}<br>
+                                    <b>修正後<b/>: {new_cell_value}<br>
                                 '''
                                 }, ensure_ascii=False), websocket)
                                 insert_history_qa(v1, "中间过程", f'''
-                                    修正：
-                                    - **シート**: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}
-                                    - **修正前**: {cell_value}
-                                    - **修正後**: {new_cell_value}
+                                    修正：<br>
+                                    <b>シート<b/>: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}<br>
+                                    <b>修正前<b/>: {cell_value}<br>
+                                    <b>修正後<b/>: {new_cell_value}<br>
                                 ''', "revise")
                                 cell.value = new_value
                     # 如果工作表被处理，保存修改
@@ -325,15 +325,16 @@ def init_flask():
                         text_array[index] = ai_value  # 替换原始文本数组中的值
                         await manager.send_personal_message(json.dumps({
                             "content": f'''
-                               修正：
-                               - **修正前**: {aisay_item}
-                               - **修正後**: {aisay_value}
+                               <b>修正<b/>：<br>
+                               <b>修正前<b/>: {aisay_item}<br>
+                               <b>修正後<b/>: {aisay_value}
                            '''
                         }, ensure_ascii=False), websocket)
                         insert_history_qa(v1, "中间过程", f'''
-                               修正：
-                               - **修正前**: {aisay_item}
-                               - **修正後**: {aisay_value}''', "revise")
+                               <b>修正<b/>：<br>
+                               <b>修正前<b/>: {aisay_item}<br>
+                               <b>修正後<b/>: {aisay_value}
+                           ''', "revise")
                 # 将修改后的文本数组重新组合成字符串
                 new_text = '\n\n'.join(text_array)
                 # 指定一个绝对路径
@@ -352,15 +353,15 @@ def init_flask():
                         replacements[item] = ai_value
                         await manager.send_personal_message(json.dumps({
                             "content": f'''
-                            修正：
-                            - **修正前**: {aisay_item}
-                            - **修正後**: {aisay_value}
+                            <b>修正<b/>：<br>
+                            <b>修正前<b/>: {aisay_item}<br>
+                            <b>修正後<b/>: {aisay_value}
                         '''
                         }, ensure_ascii=False), websocket)
                         insert_history_qa(v1, "中间过程", f'''
-                            修正：
-                            - **修正前**: {aisay_item}
-                            - **修正後**: {aisay_value}
+                            <b>修正<b/>：<br>
+                            <b>修正前<b/>: {aisay_item}<br>
+                            <b>修正後<b/>: {aisay_value}
                         ''', "revise")
                         replace_text_in_docx(file_path, replacements, new_file_path)
                 else:
@@ -582,24 +583,24 @@ def init_flask():
             file_name = knowledge.minio_file_name
             bucket_name = knowledge.minio_bucket_name
             file_type = os.path.splitext(file_name)[1]
-            if file_type == '.pdf':
-                text_splitter = parse_file_pdf(bucket_name, file_name)
-            else:
-                text_splitter = parse_file_other(bucket_name, file_name)
-            for text in text_splitter:
-                data = [{
-                    'text': text,
-                    'file_name': knowledge.file_name,
-                    'embeddings': bg3_m3(text)
-                }]
-                insert_milvus(data, knowledge_name)
-            prompt = f"""
-            {text_splitter}\n\t
-            请你帮我总结上述文本中的大纲，结果不要超过100字，只返回大纲，不需要多余的解释。
-            """
-            message = [{"content": prompt, "role": "user"}]
+            # if file_type == '.pdf':
+            #     text_splitter = parse_file_pdf(bucket_name, file_name)
+            # else:
+            #     text_splitter = parse_file_other(bucket_name, file_name)
+            # for text in text_splitter:
+            #     data = [{
+            #         'text': text,
+            #         'file_name': knowledge.file_name,
+            #         'embeddings': bg3_m3(text)
+            #     }]
+            #     insert_milvus(data, knowledge_name)
+            # prompt = f"""
+            # {text_splitter}\n\t
+            # 请你帮我总结上述文本中的大纲，结果不要超过100字，只返回大纲，不需要多余的解释。
+            # """
+            # message = [{"content": prompt, "role": "user"}]
             graph_html = get_graph(bucket_name, file_name)
-            outline = glm4_9b_chat_long_http(message, 0.2)
+            outline = "1"
             insert_knowledge_file(knowledge_name, knowledge.file_name, graph_html, outline)
             return ResponseEntity(
                 message="success",
