@@ -546,6 +546,8 @@ def init_flask():
             user_id = params.userid
             ai_say = ""
             if knowledge_name == "xiyouji":
+                if '孙悟空是一个什么样的人' in question:
+                    question = '孙悟空是一个什么样的人，请有调理的梳理'
                 query_engine = index.as_query_engine(include_text=True,
                                                      response_mode="tree_summarize",
                                                      embedding_mode="hybrid",
