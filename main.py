@@ -147,6 +147,9 @@ def init_flask():
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
+            await manager.send_personal_message(json.dumps({
+                "type": "stop"
+            }, ensure_ascii=False), websocket)
             insert_history_qa(v1, prompt, aaa, "dialog")
         except Exception as e:
             print(e)
@@ -276,6 +279,9 @@ def init_flask():
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
+            await manager.send_personal_message(json.dumps({
+                "type": "stop"
+            }, ensure_ascii=False), websocket)
             insert_history_qa(v1, prompt, ai_say, "revise")
         except Exception as e:
             print(e)
@@ -466,6 +472,9 @@ def init_flask():
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
+            await manager.send_personal_message(json.dumps({
+                "type": "stop"
+            }, ensure_ascii=False), websocket)
             insert_history_qa(v1, question, ai_say, "fileDialog")
         except Exception as e:
             print(e)
@@ -572,6 +581,9 @@ def init_flask():
                         "answer": chunk.choices[0].delta.content
                     }, ensure_ascii=False), websocket)
             print(ai_say)
+            await manager.send_personal_message(json.dumps({
+                "type": "stop"
+            }, ensure_ascii=False), websocket)
             insert_history_qa(v1, question, ai_say, "questions")
         except Exception as e:
             print(e)
