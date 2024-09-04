@@ -176,7 +176,27 @@ def init_flask():
     @app.post("/api/write/get_basic")
     def get_basic(basic: Basic):
         print(basic)
-        return get_outline(basic.article_title, 0.7, list_to_query(basic.article_choices))
+        return JSONResponse(status_code=200, content={
+      "摘要": "我是摘要",
+      "标题": "第五章 结论与展望",
+      "内容": "总结研究成果，并对未来的研究方向进行展望。",
+      "小节": [
+        {
+          "小节标题": "5.1 研究结论",
+          "内容": "概括研究的主要发现和结论"
+        },
+        {
+          "小节标题": "5.2 研究局限",
+          "内容": "讨论本研究的局限性和未来改进的空间"
+        },
+        {
+          "小节标题": "5.3 研究展望",
+          "内容": "展望未来游戏测试研究的可能方向和领域"
+        }
+      ],
+      "yinyong": "我是引用",
+    })
+        # return get_outline(basic.article_title, 0.7, list_to_query(basic.article_choices))
 
     # 论文---生成论文
     @app.websocket("/api/write/get_article/{v1}")
@@ -554,7 +574,7 @@ def init_flask():
             knowledge_name = params.knowledge_name
             user_id = params.userid
             ai_say = ""
-            if knowledge_name == "xiyouji":
+            if knowledge_name == "xiyouji_1":
                 if '孙悟空是一个什么样的人' in question:
                     question = '孙悟空是一个什么样的人，请有调理的梳理'
                 query_engine = index.as_query_engine(include_text=True,
