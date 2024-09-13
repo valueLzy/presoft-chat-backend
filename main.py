@@ -37,21 +37,13 @@ from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edi
     JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
     KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload, HistoryList, KnowledgeFileList
 
+global index
 
 def init_flask():
     Settings.embed_model = InstructorEmbeddings()
     Settings.llm = BianCangLLM()
 
-    documents = SimpleDirectoryReader(f"./xiyouji/").load_data()
 
-    graph_store = SimpleGraphStore()
-
-    storage_context = StorageContext.from_defaults(graph_store=graph_store)
-
-    index = KnowledgeGraphIndex.from_documents(documents=documents,
-                                               max_triplets_per_chunk=3,
-                                               storage_context=storage_context,
-                                               include_embeddings=True)
     app = FastAPI()
     #前端跨域 添加 CORS 中间件
     app.add_middleware(
@@ -176,27 +168,27 @@ def init_flask():
     @app.post("/api/write/get_basic")
     def get_basic(basic: Basic):
         print(basic)
-        return JSONResponse(status_code=200, content={
-      "摘要": "我是摘要",
-      "标题": "第五章 结论与展望",
-      "内容": "总结研究成果，并对未来的研究方向进行展望。",
-      "小节": [
-        {
-          "小节标题": "5.1 研究结论",
-          "内容": "概括研究的主要发现和结论"
-        },
-        {
-          "小节标题": "5.2 研究局限",
-          "内容": "讨论本研究的局限性和未来改进的空间"
-        },
-        {
-          "小节标题": "5.3 研究展望",
-          "内容": "展望未来游戏测试研究的可能方向和领域"
-        }
-      ],
-      "yinyong": "我是引用",
-    })
-        # return get_outline(basic.article_title, 0.7, list_to_query(basic.article_choices))
+    #     return JSONResponse(status_code=200, content={
+    #   "摘要": "我是摘要",
+    #   "标题": "第五章 结论与展望",
+    #   "内容": "总结研究成果，并对未来的研究方向进行展望。",
+    #   "小节": [
+    #     {
+    #       "小节标题": "5.1 研究结论",
+    #       "内容": "概括研究的主要发现和结论"
+    #     },
+    #     {
+    #       "小节标题": "5.2 研究局限",
+    #       "内容": "讨论本研究的局限性和未来改进的空间"
+    #     },
+    #     {
+    #       "小节标题": "5.3 研究展望",
+    #       "内容": "展望未来游戏测试研究的可能方向和领域"
+    #     }
+    #   ],
+    #   "yinyong": "我是引用",
+    # })
+        return get_outline(basic.article_title, 0.7, list_to_query(basic.article_choices))
 
     # 论文---生成论文
     @app.websocket("/api/write/get_article/{v1}")
@@ -339,18 +331,16 @@ def init_flask():
                                 cell_value = str(cell.value).replace("\n", "")
                                 new_cell_value = str(new_value).replace("\n", "")
                                 await manager.send_personal_message(json.dumps({
-                                    "content": f'''
-                                    修正：<br>
-                                    <b>シート<b/>: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}<br>
-                                    <b>修正前<b/>: {cell_value}<br>
-                                    <b>修正後<b/>: {new_cell_value}<br>
+                                    "content": f'''修正：
+                                    - **シート**: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}
+                                    - **修正前**: {cell_value}
+                                    - **修正後**: {new_cell_value}
                                 '''
                                 }, ensure_ascii=False), websocket)
-                                insert_history_qa(v1, "日语修正-excel", f'''
-                                    修正：<br>
-                                    <b>シート<b/>: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}<br>
-                                    <b>修正前<b/>: {cell_value}<br>
-                                    <b>修正後<b/>: {new_cell_value}<br>
+                                insert_history_qa(v1, "日语修正-excel", f'''修正：
+                                    - **シート**: {sheet} ，**行**: {cell.row} ，**列**: {get_column_letter(cell.column)}
+                                    - **修正前**: {cell_value}
+                                    - **修正後**: {new_cell_value}
                                 ''', "revise")
                                 cell.value = new_value
                     # 如果工作表被处理，保存修改
@@ -368,17 +358,13 @@ def init_flask():
                         aisay_value = ai_value.replace("\n", "")
                         text_array[index] = ai_value  # 替换原始文本数组中的值
                         await manager.send_personal_message(json.dumps({
-                            "content": f'''
-                               <b>修正<b/>：<br>
-                               <b>修正前<b/>: {aisay_item}<br>
-                               <b>修正後<b/>: {aisay_value}
+                            "content": f'''修正：- **修正前**: {aisay_item}
+                               - **修正後**: {aisay_value}
                            '''
                         }, ensure_ascii=False), websocket)
                         insert_history_qa(v1, "日语修正-txt", f'''
-                               <b>修正<b/>：<br>
-                               <b>修正前<b/>: {aisay_item}<br>
-                               <b>修正後<b/>: {aisay_value}
-                           ''', "revise")
+                              修正：- **修正前**: {aisay_item}
+                               - **修正後**: {aisay_value}''', "revise")
                 # 将修改后的文本数组重新组合成字符串
                 new_text = '\n\n'.join(text_array)
                 # 指定一个绝对路径
@@ -397,15 +383,13 @@ def init_flask():
                         replacements[item] = ai_value
                         await manager.send_personal_message(json.dumps({
                             "content": f'''
-                            <b>修正<b/>：<br>
-                            <b>修正前<b/>: {aisay_item}<br>
-                            <b>修正後<b/>: {aisay_value}
+                          修正：- **修正前**: {aisay_item}
+                            - **修正後**: {aisay_value}
                         '''
                         }, ensure_ascii=False), websocket)
                         insert_history_qa(v1, "日语修正-word", f'''
-                            <b>修正<b/>：<br>
-                            <b>修正前<b/>: {aisay_item}<br>
-                            <b>修正後<b/>: {aisay_value}
+                            修正：- **修正前**: {aisay_item}
+                            - **修正後**: {aisay_value}
                         ''', "revise")
                         replace_text_in_docx(file_path, replacements, new_file_path)
                 else:
@@ -429,27 +413,19 @@ def init_flask():
     @app.post("/api/file_chat/upload")
     def file_chat_upload(file: Filechat1):
         try:
-            user_id = "_" + file.userid
-            milvus_list = get_milvus_collections_info()
-            is_in_name = any(item['name'] == user_id for item in milvus_list)
-            file_type = os.path.splitext(file.object_name)[1]
-            if file_type == 'pdf':
-                content_list = parse_file_pdf(file.bucket_name, file.object_name)
-            else:
-                content_list = parse_file_other(file.bucket_name, file.object_name)
-            if is_in_name:
-                del_entity(user_id)
-            else:
-                create_milvus(user_id, "")
-            for item in content_list:
-                if item is None:
-                    continue
-                data = [{
-                    'text': item,
-                    'embeddings': bg3_m3(item),
-                    'file_name': file.object_name
-                }]
-                insert_milvus(data, user_id)
+
+            result = download_file(file.bucket_name, file.object_name)
+            file_dir = result['file_dir']
+            documents = SimpleDirectoryReader(f'./data/{file_dir}/').load_data()
+
+            graph_store = SimpleGraphStore()
+
+            storage_context = StorageContext.from_defaults(graph_store=graph_store)
+
+            index = KnowledgeGraphIndex.from_documents(documents=documents,
+                                                       max_triplets_per_chunk=3,
+                                                       storage_context=storage_context,
+                                                       include_embeddings=True)
             return ResponseEntity(
                 message="success",
                 status_code=200
@@ -470,31 +446,44 @@ def init_flask():
             data = await websocket.receive_text()
             params = Filechat2.parse_raw(data)
             question = params.question
-            history = params.history
-            user_id = "_" + params.userid
-            language = params.language
-            res = matching_paragraph(question, user_id, 1000)
-            filtered_result = []
-            for result in res:
-                filtered_result = [res.entity.text for res in result if res.score > 0]
-            a = rerank(question, filtered_result, 1)
-            rerank_results = [y['index'] for y in a if y['relevance_score'] > 0.7]
-            rerank_filtered_result = []
-            for index in rerank_results:
-                rerank_filtered_result.append(filtered_result[index])
-            message = {"content": file_chat_prompt.format(question=question, content=str(rerank_filtered_result),
-                                                          language=language), "role": "user"}
-            history.append(message)
-            answer = glm4_9b_chat_ws(history, 0.7)
+            query_engine = index.as_query_engine(include_text=True,
+                                                 response_mode="tree_summarize",
+                                                 embedding_mode="hybrid",
+                                                 similarity_top_k=4,
+                                                 streaming=True)
+            generator = query_engine.query(question).response_gen
             ai_say = ""
-            for chunk in answer:
-                ai_say += chunk.choices[0].delta.content
+            for chunk in generator:
+                # 在这里处理每个块
+                ai_say += chunk
                 await manager.send_personal_message(json.dumps({
-                    "answer": chunk.choices[0].delta.content
+                    "answer": chunk
                 }, ensure_ascii=False), websocket)
-            await manager.send_personal_message(json.dumps({
-                "type": "stop"
-            }, ensure_ascii=False), websocket)
+            # history = params.history
+            # user_id = "_" + params.userid
+            # language = params.language
+            # res = matching_paragraph(question, user_id, 1000)
+            # filtered_result = []
+            # for result in res:
+            #     filtered_result = [res.entity.text for res in result if res.score > 0]
+            # a = rerank(question, filtered_result, 3)
+            # rerank_results = [y['index'] for y in a if y['relevance_score'] > 0.7]
+            # rerank_filtered_result = []
+            # for index in rerank_results:
+            #     rerank_filtered_result.append(filtered_result[index])
+            # message = {"content": file_chat_prompt.format(question=question, content=str(rerank_filtered_result),
+            #                                               language=language), "role": "user"}
+            # history.append(message)
+            # answer = glm4_9b_chat_ws(history, 0.7)
+            # ai_say = ""
+            # for chunk in answer:
+            #     ai_say += chunk.choices[0].delta.content
+            #     await manager.send_personal_message(json.dumps({
+            #         "answer": chunk.choices[0].delta.content
+            #     }, ensure_ascii=False), websocket)
+            # await manager.send_personal_message(json.dumps({
+            #     "type": "stop"
+            # }, ensure_ascii=False), websocket)
             insert_history_qa(v1, question, ai_say, "fileDialog")
         except Exception as e:
             print(e)
@@ -574,32 +563,32 @@ def init_flask():
             knowledge_name = params.knowledge_name
             user_id = params.userid
             ai_say = ""
-            if knowledge_name == "xiyouji_1":
-                if '孙悟空是一个什么样的人' in question:
-                    question = '孙悟空是一个什么样的人，请有调理的梳理'
-                query_engine = index.as_query_engine(include_text=True,
-                                                     response_mode="tree_summarize",
-                                                     embedding_mode="hybrid",
-                                                     similarity_top_k=4,
-                                                     streaming=True)
-                generator = query_engine.query(question).response_gen
-                for chunk in generator:
-                    # 在这里处理每个块
-                    ai_say += chunk
-                    await manager.send_personal_message(json.dumps({
-                        "answer": chunk
-                    }, ensure_ascii=False), websocket)
-            else:
-                res = matching_milvus_paragraph(question, knowledge_name, 3)
-                messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'),
-                            "role": "user"}
-                history.append(messages)
-                answer = glm4_9b_chat_ws(history, 0.1)
-                for chunk in answer:
-                    ai_say += chunk.choices[0].delta.content
-                    await manager.send_personal_message(json.dumps({
-                        "answer": chunk.choices[0].delta.content
-                    }, ensure_ascii=False), websocket)
+            # if knowledge_name == "xiyouji_1":
+            #     if '孙悟空是一个什么样的人' in question:
+            #         question = '孙悟空是一个什么样的人，请有调理的梳理'
+            #     query_engine = index.as_query_engine(include_text=True,
+            #                                          response_mode="tree_summarize",
+            #                                          embedding_mode="hybrid",
+            #                                          similarity_top_k=4,
+            #                                          streaming=True)
+            #     generator = query_engine.query(question).response_gen
+            #     for chunk in generator:
+            #         # 在这里处理每个块
+            #         ai_say += chunk
+            #         await manager.send_personal_message(json.dumps({
+            #             "answer": chunk
+            #         }, ensure_ascii=False), websocket)
+            # else:
+            res = matching_milvus_paragraph(question, knowledge_name, 3)
+            messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'),
+                        "role": "user"}
+            history.append(messages)
+            answer = glm4_9b_chat_ws(history, 0.1)
+            for chunk in answer:
+                ai_say += chunk.choices[0].delta.content
+                await manager.send_personal_message(json.dumps({
+                    "answer": chunk.choices[0].delta.content
+                }, ensure_ascii=False), websocket)
             print(ai_say)
             await manager.send_personal_message(json.dumps({
                 "type": "stop"
