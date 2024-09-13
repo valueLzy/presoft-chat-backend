@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 import shutil
 import uuid
 from datetime import datetime
@@ -36,8 +37,6 @@ from utils import md5_encrypt, download_file, put_file, has_japanese, get_red_te
 from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edit, JachatCorrect, \
     JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
     KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload, HistoryList, KnowledgeFileList
-
-global index
 
 def init_flask():
     Settings.embed_model = InstructorEmbeddings()
@@ -413,7 +412,6 @@ def init_flask():
     @app.post("/api/file_chat/upload")
     def file_chat_upload(file: Filechat1):
         try:
-
             result = download_file(file.bucket_name, file.object_name)
             file_dir = result['file_dir']
             documents = SimpleDirectoryReader(f'./data/{file_dir}/').load_data()
@@ -422,10 +420,13 @@ def init_flask():
 
             storage_context = StorageContext.from_defaults(graph_store=graph_store)
 
-            index = KnowledgeGraphIndex.from_documents(documents=documents,
-                                                       max_triplets_per_chunk=3,
-                                                       storage_context=storage_context,
-                                                       include_embeddings=True)
+            filechat_index = KnowledgeGraphIndex.from_documents(documents=documents,
+                                               max_triplets_per_chunk=3,
+                                               storage_context=storage_context,
+                                               include_embeddings=True)
+            # 将 filechat_index 序列化并保存到文件
+            with open("filechat_index.pkl", "wb") as f:
+                pickle.dump(filechat_index, f)
             return ResponseEntity(
                 message="success",
                 status_code=200
@@ -446,7 +447,9 @@ def init_flask():
             data = await websocket.receive_text()
             params = Filechat2.parse_raw(data)
             question = params.question
-            query_engine = index.as_query_engine(include_text=True,
+            with open("filechat_index.pkl", "rb") as f:
+                filechat_index = pickle.load(f)
+            query_engine = filechat_index.as_query_engine(include_text=True,
                                                  response_mode="tree_summarize",
                                                  embedding_mode="hybrid",
                                                  similarity_top_k=4,
