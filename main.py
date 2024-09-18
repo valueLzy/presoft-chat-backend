@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
-    list_to_query, revise_article
+    list_to_query, revise_article, get_outline_by_shanhuyun
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
     get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type, \
@@ -38,10 +38,10 @@ from models.entity import Question, UserLogin, UserRegister, Basic, Article, Edi
     JafileCorrect, Filechat1, Filechat2, ResponseEntity, Knowledge, GetKnowledge, DelKnowledge, KnowledgeQa, \
     KnowledgeFile, KnowledgeFileDel, KnowledgeFileUpload, HistoryList, KnowledgeFileList
 
+
 def init_flask():
     Settings.embed_model = InstructorEmbeddings()
     Settings.llm = BianCangLLM()
-
 
     app = FastAPI()
     #前端跨域 添加 CORS 中间件
@@ -167,26 +167,26 @@ def init_flask():
     @app.post("/api/write/get_basic")
     def get_basic(basic: Basic):
         print(basic)
-    #     return JSONResponse(status_code=200, content={
-    #   "摘要": "我是摘要",
-    #   "标题": "第五章 结论与展望",
-    #   "内容": "总结研究成果，并对未来的研究方向进行展望。",
-    #   "小节": [
-    #     {
-    #       "小节标题": "5.1 研究结论",
-    #       "内容": "概括研究的主要发现和结论"
-    #     },
-    #     {
-    #       "小节标题": "5.2 研究局限",
-    #       "内容": "讨论本研究的局限性和未来改进的空间"
-    #     },
-    #     {
-    #       "小节标题": "5.3 研究展望",
-    #       "内容": "展望未来游戏测试研究的可能方向和领域"
-    #     }
-    #   ],
-    #   "yinyong": "我是引用",
-    # })
+        #     return JSONResponse(status_code=200, content={
+        #   "摘要": "我是摘要",
+        #   "标题": "第五章 结论与展望",
+        #   "内容": "总结研究成果，并对未来的研究方向进行展望。",
+        #   "小节": [
+        #     {
+        #       "小节标题": "5.1 研究结论",
+        #       "内容": "概括研究的主要发现和结论"
+        #     },
+        #     {
+        #       "小节标题": "5.2 研究局限",
+        #       "内容": "讨论本研究的局限性和未来改进的空间"
+        #     },
+        #     {
+        #       "小节标题": "5.3 研究展望",
+        #       "内容": "展望未来游戏测试研究的可能方向和领域"
+        #     }
+        #   ],
+        #   "yinyong": "我是引用",
+        # })
         return get_outline(basic.article_title, 0.7, list_to_query(basic.article_choices))
 
     # 论文---生成论文
@@ -402,7 +402,8 @@ def init_flask():
                 "new_file_name": f"{file_dir}.{file_type}",
                 "bucket_name": "modify-ja-file"
             }, ensure_ascii=False), websocket)
-            insert_history_qa(v1, "修改后-下载文件", f"192.168.1.21:19000/modify-ja-file/{file_dir}.{file_type}", "revise")
+            insert_history_qa(v1, "修改后-下载文件", f"192.168.1.21:19000/modify-ja-file/{file_dir}.{file_type}",
+                              "revise")
         except Exception as e:
             print(e)
         finally:
@@ -421,9 +422,9 @@ def init_flask():
             storage_context = StorageContext.from_defaults(graph_store=graph_store)
 
             filechat_index = KnowledgeGraphIndex.from_documents(documents=documents,
-                                               max_triplets_per_chunk=3,
-                                               storage_context=storage_context,
-                                               include_embeddings=True)
+                                                                max_triplets_per_chunk=3,
+                                                                storage_context=storage_context,
+                                                                include_embeddings=True)
             # 将 filechat_index 序列化并保存到文件
             with open("filechat_index.pkl", "wb") as f:
                 pickle.dump(filechat_index, f)
@@ -450,10 +451,10 @@ def init_flask():
             with open("filechat_index.pkl", "rb") as f:
                 filechat_index = pickle.load(f)
             query_engine = filechat_index.as_query_engine(include_text=True,
-                                                 response_mode="tree_summarize",
-                                                 embedding_mode="hybrid",
-                                                 similarity_top_k=4,
-                                                 streaming=True)
+                                                          response_mode="tree_summarize",
+                                                          embedding_mode="hybrid",
+                                                          similarity_top_k=4,
+                                                          streaming=True)
             generator = query_engine.query(question).response_gen
             ai_say = ""
             for chunk in generator:
@@ -693,6 +694,70 @@ def init_flask():
                 status_code=500
             )
 
+    # 珊瑚云_大纲接口
+    @app.post("/shanhuyun_api/write/get_basic")
+    def get_basic(basic: Basic):
+        print(basic)
+        return get_outline_by_shanhuyun(basic.article_title, 0.7, list_to_query(basic.article_choices))
+
+    # 珊瑚云_生成科技研究报告
+    @app.websocket("/shanhuyun_api/write/get_article/{v1}")
+    async def get_article(websocket: WebSocket, v1: str):
+        manager = ConnectionManager()
+        await manager.connect(websocket)
+        try:
+            data = await websocket.receive_text()
+            params = Article.parse_raw(data)
+            article_base = params.article_base
+            article_choices = params.article_choices
+            ref_file = []
+            #摘要
+            summary = get_summary(article_base, list_to_query(article_choices))
+            for chunk in summary["ai_say"]:
+                await manager.send_personal_message(json.dumps({
+                    "summary": chunk.choices[0].delta.content
+                }, ensure_ascii=False), websocket)
+            # 正文
+            json_list = extract_content_from_json(article_base)
+            for index, item in enumerate(json_list):
+                print(index, item)
+                if '标题' in item and index != len(json_list) - 1:
+                    await manager.send_personal_message(json.dumps({
+                        "biaoti": item['标题']
+                    }, ensure_ascii=False), websocket)
+                elif '小节标题' in item:
+                    await manager.send_personal_message(json.dumps({
+                        "xiaojiebiaoti": item['小节标题']
+                    }, ensure_ascii=False), websocket)
+                    body = get_body(article_base, str(item), list_to_query(article_choices))
+                    if body['ref_file']:
+                        for x in body['ref_file']:
+                            ref_file.append(x)
+                    for chunk in body['ai_say']:
+                        await manager.send_personal_message(json.dumps({
+                            "xiaojieneirong": chunk.choices[0].delta.content
+                        }, ensure_ascii=False), websocket)
+                elif '标题' in item and index == len(json_list) - 1:
+                    await manager.send_personal_message(json.dumps({
+                        "xiaojiebiaoti": item['标题']
+                    }, ensure_ascii=False), websocket)
+                    body = get_body(article_base, str(item), list_to_query(article_choices))
+                    for chunk in body['ai_say']:
+                        await manager.send_personal_message(json.dumps({
+                            "xiaojieneirong": chunk.choices[0].delta.content
+                        }, ensure_ascii=False), websocket)
+                    if body['ref_file']:
+                        for x in body['ref_file']:
+                            ref_file.append(x)
+            # 引用
+            await manager.send_personal_message(json.dumps({
+                "yinyong": ref_file
+            }, ensure_ascii=False), websocket)
+
+        except Exception as e:
+            print(e)
+        finally:
+            manager.disconnect(websocket)
     return app
 
 

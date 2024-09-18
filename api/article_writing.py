@@ -2,6 +2,103 @@ from knowledge.dataset_api import matching_paragraph, matching_paragraph_lunwen
 from llm.embeddings import rerank
 from llm.glm4 import glm4_9b_chat_ws, glm4_9b_chat_http, deepseek_chat
 
+shanhuyun_prompt = '''
+请你根据用户的要求，以及参考资料帮我生成一篇中文科技研究报告大纲，最后以严格的json格式返回(不要丢失括号)，不需要解释，大标题和小标题都要有序号，大标题需要用大写序号。
+用户要求：{{query}}
+参考资料：{{ref}}
+
+json格式要求：
+{
+  "标题": "",
+  "摘要": "",
+  "正文": [
+    {
+      "标题": "第一章 研究背景及现状",
+      "内容": "章节1详细内容",
+      "小节": [
+        {
+          "小节标题": "1.1 小节标题",
+          "内容": "1.1 小节内容"
+        },
+        {
+          "小节标题": "1.2 小节标题",
+          "内容": "1.2 小节内容"
+        }
+      ]
+    },
+    {
+      "标题": "第二章 最新研究进展",
+      "内容": "章节2详细内容",
+      "小节": [
+        {
+          "小节标题": "2.1 小节标题",
+          "内容": "2.1 小节内容"
+        },
+        {
+          "小节标题": "2.2 小节标题",
+          "内容": "2.2 小节内容"
+        }
+        // 更多小节...
+      ]
+    }
+    // 更多章节...
+  ]
+},
+{
+      "标题": "第三章 热点问题讨论",
+      "内容": "章节3详细内容",
+      "小节": [
+        {
+          "小节标题": "3.1 小节标题",
+          "内容": "3.1 小节内容"
+        },
+        {
+          "小节标题": "3.2 小节标题",
+          "内容": "3.2 小节内容"
+        }
+        // 更多小节...
+      ]
+    }
+    // 更多章节...
+  ]
+},
+{
+      "标题": "第四章 发展趋势展望",
+      "内容": "章节4详细内容",
+      "小节": [
+        {
+          "小节标题": "4.1 小节标题",
+          "内容": "4.1 小节内容"
+        },
+        {
+          "小节标题": "4.2 小节标题",
+          "内容": "4.2 小节内容"
+        }
+        // 更多小节...
+      ]
+    }
+    // 更多章节...
+  ]
+},
+{
+      "标题": "第五章 结论与建议",
+      "内容": "章节5详细内容",
+      "小节": [
+        {
+          "小节标题": "5.1 小节标题",
+          "内容": "5.1 小节内容"
+        },
+        {
+          "小节标题": "5.2 小节标题",
+          "内容": "5.2 小节内容"
+        }
+        // 更多小节...
+      ]
+    }
+    // 更多章节...
+  ]
+}
+'''
 prompt = '''
 请你根据用户的要求，以及参考资料帮我生成一篇中文论文大纲，最后以严格的json格式返回(不要丢失括号)，不需要解释，大标题和小标题都要有序号，大标题需要用大写序号。
 用户要求：{{query}}
@@ -106,6 +203,7 @@ def get_ref(query, filter_expr):
         rerank_filtered_result_file.append(ref[0][index].fields['file_name'])
     return rerank_filtered_result_text, set(rerank_filtered_result_file)
 
+
 def extract_bracket_content(s):
     start = s.find('{')
     end = s.rfind('}')
@@ -113,17 +211,31 @@ def extract_bracket_content(s):
         return ""  # 如果找不到大括号或者顺序不正确，返回空字符串
     return s[start:end + 1]
 
+
 #标题获取大纲
 def get_outline(query, temperature, filter_expr):
     rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr)
     messages = [
         {"content": prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)), "role": "user"}]
     ai_say = glm4_9b_chat_http(messages, temperature)
-    print(extract_bracket_content(ai_say),rerank_filtered_result_file)
+    print(extract_bracket_content(ai_say), rerank_filtered_result_file)
     return {
         'json': extract_bracket_content(ai_say),
         'ref_file': rerank_filtered_result_file
     }
+
+
+def get_outline_by_shanhuyun(query, temperature, filter_expr):
+    rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr)
+    messages = [
+        {"content": shanhuyun_prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)), "role": "user"}]
+    ai_say = glm4_9b_chat_http(messages, temperature)
+    print(extract_bracket_content(ai_say), rerank_filtered_result_file)
+    return {
+        'json': extract_bracket_content(ai_say),
+        'ref_file': rerank_filtered_result_file
+    }
+
 
 #获取摘要
 def get_summary(outline, filter_expr):
@@ -136,16 +248,18 @@ def get_summary(outline, filter_expr):
         {"content": article_prompt.replace("{{ref}}", abstract_ref_str).replace(
             "{{outline}}", str(outline)),
             "role": "user"}]
-    ai_say = glm4_9b_chat_ws(messages,0.7)
+    ai_say = glm4_9b_chat_ws(messages, 0.7)
     return {
         'ai_say': ai_say,
         'ref_file': rerank_filtered_result_file
     }
 
+
 #获取关键词
 def get_keywords(outline):
     keywords = outline['关键词']
     return keywords
+
 
 #从大纲里摘出正文
 def extract_content_from_json(json_object):
@@ -193,9 +307,12 @@ def get_body(outline, type, filter_expr):
         'ai_say': ai_say,
         'ref_file': rerank_filtered_result_file
     }
+
+
 def list_to_query(lst):
     query = ' or '.join([f"type == '{item}'" for item in lst])
     return query
+
 
 # #修改论文-检查是否存在
 # def get_value_if_key_in_dicts(array_of_dicts, key_to_check):
@@ -217,4 +334,3 @@ def revise_article(content, query):
         "{{content}}", content), "role": "user"}]
     ai_say = deepseek_chat(1.25, messages)
     return ai_say
-
