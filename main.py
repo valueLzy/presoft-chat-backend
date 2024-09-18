@@ -695,13 +695,13 @@ def init_flask():
             )
 
     # 珊瑚云_大纲接口
-    @app.post("/shanhuyun_api/write/get_basic")
+    @app.post("/api/write/get_basic_shanhuyun")
     def get_basic(basic: Basic):
         print(basic)
         return get_outline_by_shanhuyun(basic.article_title, 0.7, list_to_query(basic.article_choices))
 
     # 珊瑚云_生成科技研究报告
-    @app.websocket("/shanhuyun_api/write/get_article/{v1}")
+    @app.websocket("/api/write/get_article_shanhuyun/{v1}")
     async def get_article(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
