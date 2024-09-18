@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from api.article_writing import get_outline, get_summary, get_keywords, extract_content_from_json, get_body, \
-    list_to_query, revise_article, get_outline_by_shanhuyun
+    list_to_query, revise_article, get_outline_by_shanhuyun, shanhuyun_get_body
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
     get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type, \
@@ -729,7 +729,7 @@ def init_flask():
                     await manager.send_personal_message(json.dumps({
                         "xiaojiebiaoti": item['小节标题']
                     }, ensure_ascii=False), websocket)
-                    body = get_body(article_base, str(item), list_to_query(article_choices))
+                    body = shanhuyun_get_body(article_base, str(item), list_to_query(article_choices))
                     if body['ref_file']:
                         for x in body['ref_file']:
                             ref_file.append(x)
@@ -741,7 +741,7 @@ def init_flask():
                     await manager.send_personal_message(json.dumps({
                         "xiaojiebiaoti": item['标题']
                     }, ensure_ascii=False), websocket)
-                    body = get_body(article_base, str(item), list_to_query(article_choices))
+                    body = shanhuyun_get_body(article_base, str(item), list_to_query(article_choices))
                     for chunk in body['ai_say']:
                         await manager.send_personal_message(json.dumps({
                             "xiaojieneirong": chunk.choices[0].delta.content

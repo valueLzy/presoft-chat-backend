@@ -186,7 +186,25 @@ revise_prompt = '''
 论文正文片段：
         {{content}}
 '''
+shanhuyun_body_prompt = '''
+你是科技研究报告撰写专家（善于用数学公式以及表格辅助说明），我将提供给你参考资料，大纲以及需要你编写的小节部分。
+你需要做的是阅读并理解这些内容，然后根据我的要求，帮助我生成小节的内容。
 
+要求：
+    1. 请不要在内容中参杂标题，全写正文。
+    2. 不需要多余的解释。
+    3. 小节内容要丰富。
+    4. 不得少于500字。
+    5. 在小节最后不需要你总结。
+    6. 请不要在正文中添加引用。
+
+
+需要你编写的：{{type}}
+
+参考资料：{{ref}}
+
+论文大纲：{{outline}}
+'''
 
 def get_ref(query, filter_expr):
     ref = matching_paragraph_lunwen(query, 'damage_explosion_v2', 1000, filter_expr)
@@ -308,6 +326,21 @@ def get_body(outline, type, filter_expr):
         'ref_file': rerank_filtered_result_file
     }
 
+#分小节获取正文
+def shanhuyun_get_body(outline, type, filter_expr):
+    abstract_ref, rerank_filtered_result_file = get_ref(type, filter_expr)
+    abstract_ref_str = ''
+    for item in abstract_ref:
+        abstract_ref_str += item + "\n"
+    messages = [
+        {"content": shanhuyun_body_prompt.replace("{{ref}}", abstract_ref_str).replace(
+            "{{outline}}", str(outline)).replace("{{type}}", type),
+         "role": "user"}]
+    ai_say = deepseek_chat(1.25, messages)
+    return {
+        'ai_say': ai_say,
+        'ref_file': rerank_filtered_result_file
+    }
 
 def list_to_query(lst):
     query = ' or '.join([f"type == '{item}'" for item in lst])
