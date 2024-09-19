@@ -11,7 +11,7 @@ def create_nebula_space_and_schema(space_name):
         config.interval_check = -1
 
         connection_pool = ConnectionPool()
-        ok = connection_pool.init([('192.168.1.21', 9669)], config)
+        ok = connection_pool.init([('192.168.2.8', 9669)], config)
 
         if not ok:
             raise Exception("Failed to initialize connection pool")
@@ -37,7 +37,7 @@ def drop_space(space_name):
         config.interval_check = -1
 
         connection_pool = ConnectionPool()
-        ok = connection_pool.init([('192.168.1.21', 9669)], config)
+        ok = connection_pool.init([('192.168.2.8', 9669)], config)
 
         if not ok:
             raise Exception("Failed to initialize connection pool")

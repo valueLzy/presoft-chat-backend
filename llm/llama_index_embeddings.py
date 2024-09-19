@@ -10,7 +10,7 @@ class InstructorEmbeddings(BaseEmbedding):
 
     def __init__(
         self,
-        url: str = "http://192.168.1.21:8001/v1/embeddings",
+        url: str = "http://192.168.2.8:8001/v1/embeddings",
         instruction: str = '''
         ''',
         **kwargs: Any,

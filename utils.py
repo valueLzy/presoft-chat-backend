@@ -15,7 +15,7 @@ from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import  rerank
 
 minio_client = Minio(
-    "192.168.1.21:19000",
+    "192.168.2.8:19000",
     access_key="minioadmin",
     secret_key="minioadmin",
     secure=False,
@@ -130,7 +130,7 @@ def replace_text_in_paragraph(paragraph, old_text, new_text):
 
 def parse_file_other(bucket_name: str, file_name: str) -> list:
     # 定义请求体
-    url = "http://192.168.1.21:5050/knowledge/parse-other/"
+    url = "http://192.168.2.8:5050/knowledge/parse-other/"
     data = {
         "bucket_name": bucket_name,  # 替换为你使用的模型名
         "object_name": file_name
@@ -148,7 +148,7 @@ def parse_file_other(bucket_name: str, file_name: str) -> list:
 
 def parse_file_pdf(bucket_name: str, file_name: str) -> list:
     # 定义请求体
-    url = "http://192.168.1.21:5050/knowledge/parse-pdf/"
+    url = "http://192.168.2.8:5050/knowledge/parse-pdf/"
     data = {
         "bucket_name": bucket_name,  # 替换为你使用的模型名
         "object_name": file_name

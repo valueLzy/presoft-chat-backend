@@ -2,7 +2,7 @@ import pymysql
 
 # 数据库配置
 db_config = {
-    'host': '192.168.1.21',
+    'host': '192.168.2.8',
     'user': 'root',
     'password': '123456',
     'database': 'persoft',

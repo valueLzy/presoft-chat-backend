@@ -11,7 +11,7 @@ config.idle_time = 0
 # 检查空闲连接时间间隔
 config.interval_check = -1
 connection_pool = ConnectionPool()
-ok = connection_pool.init([('192.168.1.21', 9669)], config)
+ok = connection_pool.init([('192.168.2.8', 9669)], config)
 with connection_pool.session_context('root', 'nebula') as sess:
     sess.execute('''
         # Create Space 

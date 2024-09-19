@@ -6,7 +6,7 @@ import requests
 
 def bg3_m3(messages):
     # 定义请求体
-    url = "http://192.168.1.21:8001/v1/embeddings"
+    url = "http://192.168.2.8:8001/v1/embeddings"
     data = {
         "model": "bge-m3",  # 替换为你使用的模型名
         "input": messages
@@ -25,7 +25,7 @@ def bg3_m3(messages):
 
 def rerank(query, documents, matches_number):
     # 定义请求体
-    url = "http://192.168.1.21:6006/v1/rerank"
+    url = "http://192.168.2.8:6006/v1/rerank"
     data = {
         "query": query,
         "documents": documents
@@ -53,7 +53,7 @@ def rerank(query, documents, matches_number):
 
 
 def segment_document(text):
-    url = "http://192.168.1.21:8506/segment_document"
+    url = "http://192.168.2.8:8506/segment_document"
     data = {
         "document": text
     }

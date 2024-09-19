@@ -402,7 +402,7 @@ def init_flask():
                 "new_file_name": f"{file_dir}.{file_type}",
                 "bucket_name": "modify-ja-file"
             }, ensure_ascii=False), websocket)
-            insert_history_qa(v1, "修改后-下载文件", f"192.168.1.21:19000/modify-ja-file/{file_dir}.{file_type}",
+            insert_history_qa(v1, "修改后-下载文件", f"192.168.2.8:19000/modify-ja-file/{file_dir}.{file_type}",
                               "revise")
         except Exception as e:
             print(e)
@@ -711,9 +711,16 @@ def init_flask():
             article_base = params.article_base
             article_choices = params.article_choices
             ref_file = []
+            await manager.send_personal_message(json.dumps({
+                "biaoti": article_base['标题']
+            }, ensure_ascii=False), websocket)
+            await manager.send_personal_message(json.dumps({
+                "biaoti": "摘要"
+            }, ensure_ascii=False), websocket)
             #摘要
             summary = get_summary(article_base, list_to_query(article_choices))
             for chunk in summary["ai_say"]:
+                print(chunk.choices[0].delta.content, end='')
                 await manager.send_personal_message(json.dumps({
                     "summary": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
@@ -734,6 +741,7 @@ def init_flask():
                         for x in body['ref_file']:
                             ref_file.append(x)
                     for chunk in body['ai_say']:
+                        print(chunk.choices[0].delta.content, end='')
                         await manager.send_personal_message(json.dumps({
                             "xiaojieneirong": chunk.choices[0].delta.content
                         }, ensure_ascii=False), websocket)
@@ -743,6 +751,7 @@ def init_flask():
                     }, ensure_ascii=False), websocket)
                     body = shanhuyun_get_body(article_base, str(item), list_to_query(article_choices))
                     for chunk in body['ai_say']:
+                        print(chunk.choices[0].delta.content, end='')
                         await manager.send_personal_message(json.dumps({
                             "xiaojieneirong": chunk.choices[0].delta.content
                         }, ensure_ascii=False), websocket)

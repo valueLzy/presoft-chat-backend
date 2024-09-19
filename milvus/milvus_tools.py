@@ -5,7 +5,7 @@ connections.connect(
     alias="default",
     user='root',
     password='Milvus',
-    host='192.168.1.21',
+    host='192.168.2.8',
     port='19530',
 )
 
