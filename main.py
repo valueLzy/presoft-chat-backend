@@ -712,7 +712,7 @@ def init_flask():
             article_choices = params.article_choices
             ref_file = []
             await manager.send_personal_message(json.dumps({
-                "biaoti": article_base['标题']
+                "title": article_base['标题']
             }, ensure_ascii=False), websocket)
             #摘要
             summary = get_summary(article_base, list_to_query(article_choices))
