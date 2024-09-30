@@ -137,7 +137,7 @@ def check_username_exists(username):
     return result[0][0] > 0 if result else False
 
 
-def insert_user(user_id, username, roles, menus, desc, password, company, nationality):
+def insert_user(user_id, username, roles, menus, desc, password, email, iphone):
     query = """
     INSERT INTO `user` (
         `userId`, 
@@ -159,7 +159,26 @@ def insert_user(user_id, username, roles, menus, desc, password, company, nation
         %s
     );
     """
-    params = (user_id, username, roles, menus, desc, password, company, nationality)
+    params = (user_id, username, roles, menus, desc, password, email, iphone)
+    return execute_query(query, params)
+
+
+def update_user(user_id, username, password, email, iphone):
+    # 构建 SQL 查询
+    query = """
+    UPDATE `user` 
+    SET 
+        `userName` = COALESCE(%s, `userName`),
+        `password` = COALESCE(%s, `password`),
+        `email` = COALESCE(%s, `email`),
+        `iphone` = COALESCE(%s, `iphone`)
+    WHERE `userId` = %s;
+    """
+
+    # 构建参数列表
+    params = (username, password, email, iphone, user_id)
+
+    # 执行查询
     return execute_query(query, params)
 
 

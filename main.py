@@ -19,7 +19,8 @@ from api.article_writing import get_outline, get_summary, get_keywords, extract_
 from database.graph_ngql import create_nebula_space_and_schema, drop_space
 from database.sql import get_user_with_menus, check_username_exists, insert_user, insert_knowledge, \
     get_knowledge_by_user, delete_knowledge_by_name_and_user, insert_history_qa, query_history_by_user_and_type, \
-    insert_knowledge_file, query_knowledge_file_by_knowledge_id_and_file_name, delete_knowledge_file_by_name_and_file
+    insert_knowledge_file, query_knowledge_file_by_knowledge_id_and_file_name, delete_knowledge_file_by_name_and_file, \
+    update_user
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
@@ -96,6 +97,18 @@ def init_flask():
             insert_user(user_id, user_name, '用户', '1,2,3,4,5', '', user_password, user.email,
                         user.iphone)
             return JSONResponse(status_code=200, content={"message": "success"})
+
+    # 修改个人信息
+    @app.post("/api/user/update_userinfo")
+    def update_userinfo(user: UserRegister):
+        try:
+            user_id = user.userid
+            user_name = user.username
+            user_password = md5_encrypt(user.password)
+            update_user(user_id, user_name, user_password, user.email, user.iphone)
+            return JSONResponse(status_code=200, content={"message": "success"})
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"message": e})
 
     @app.post("/api/history/get_list")
     def get_history_list(history: HistoryList):
