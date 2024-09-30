@@ -15,16 +15,18 @@ class Question(BaseModel):
 
 
 class UserLogin(BaseModel):
-    username: str
+    userid: str
     password: str
     language: str
 
 
 class UserRegister(BaseModel):
+    userid: str
     username: str
     password: str
-    company: str
-    nationality: str
+    email: str
+    iphone: str
+
 
 
 class Basic(BaseModel):

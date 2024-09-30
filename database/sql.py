@@ -12,11 +12,13 @@ def get_user_with_menus(username, password, language):
         u.userName, 
         u.roles, 
         u.desc, 
-        u.password
+        u.password,
+        u.email,
+        u.iphone
     FROM 
         user u
     WHERE 
-        u.userName = %s AND 
+        u.userId = %s AND 
         u.password = %s;
     """
 
@@ -46,7 +48,7 @@ def get_user_with_menus(username, password, language):
     LEFT JOIN 
         menu m ON FIND_IN_SET(m.id, u.menus)
     WHERE 
-        u.userName = %s AND 
+        u.userId = %s AND 
         u.password = %s AND
         m.parent_id IS NULL
     ORDER BY m.id;
@@ -128,7 +130,7 @@ def check_username_exists(username):
     FROM 
         user u
     WHERE 
-        u.userName = %s;
+        u.userId = %s;
     """
     params = username
     result = execute_query(query, params)
@@ -144,8 +146,8 @@ def insert_user(user_id, username, roles, menus, desc, password, company, nation
         `menus`, 
         `desc`, 
         `password`,
-        `company`,
-        `nationality`
+        `email`,
+        `iphone`
     ) VALUES (
         %s, 
         %s, 

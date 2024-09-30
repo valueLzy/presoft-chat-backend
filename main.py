@@ -58,7 +58,7 @@ def init_flask():
     def login(user: UserLogin):
         print(user)
         # 获取用户及其菜单信息
-        result = get_user_with_menus(user.username, md5_encrypt(user.password), user.language)
+        result = get_user_with_menus(user.userid, md5_encrypt(user.password), user.language)
 
         if not result:
             return JSONResponse(status_code=500, content={"message": "用户名或密码不存在"})
@@ -66,7 +66,7 @@ def init_flask():
         # 提取用户信息和菜单信息
         user_info = result["user_info"]
         menu_list = result["menuList"]
-        tokenstr = user_info[0] + user.username + user.password
+        tokenstr = user_info[0] + user.userid + user.password
         # 生成Token
         token = md5_encrypt(tokenstr)
         # 构建返回的数据结构
@@ -76,6 +76,8 @@ def init_flask():
             "roles": user_info[2],
             "desc": user_info[3],
             "password": user_info[4],
+            "email": user_info[5],
+            "iphone": user_info[6],
             "menuList": menu_list,
             "token": token
         })
@@ -84,14 +86,15 @@ def init_flask():
     @app.post("/api/user/register")
     def register(user: UserRegister):
         # 获取用户及密码
+        user_id = user.userid
         user_name = user.username
         user_password = md5_encrypt(user.password)
         # 判断用户名是否存在
-        if check_username_exists(user_name):
+        if check_username_exists(user_id):
             return JSONResponse(status_code=501, content={"message": "用户名存在"})
         else:
-            insert_user(str(uuid.uuid4()), user_name, '用户', '1,2,3,4,5', '', user_password, user.company,
-                        user.nationality)
+            insert_user(user_id, user_name, '用户', '1,2,3,4,5', '', user_password, user.email,
+                        user.iphone)
             return JSONResponse(status_code=200, content={"message": "success"})
 
     @app.post("/api/history/get_list")
