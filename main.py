@@ -23,7 +23,7 @@ from database.sql import get_user_with_menus, check_username_exists, insert_user
 from knowledge.dataset_api import matching_paragraph
 from llm.embeddings import bg3_m3, rerank
 
-from llm.glm4 import glm4_9b_chat_ws, glm4_9b_chat_long_http
+from llm.glm4 import glm4_9b_chat_ws, glm4_9b_chat_long_http, glm4_9b_chat_ws_common
 from llm.glm4_llamaindex import GLM4
 from llm.llama_index_embeddings import InstructorEmbeddings
 from llm.zhipuai_llamaindex import BianCangLLM
@@ -61,7 +61,7 @@ def init_flask():
         result = get_user_with_menus(user.username, md5_encrypt(user.password), user.language)
 
         if not result:
-            return JSONResponse(status_code=404, content={"message": "用户名或密码不存在"})
+            return JSONResponse(status_code=500, content={"message": "用户名或密码不存在"})
 
         # 提取用户信息和菜单信息
         user_info = result["user_info"]
@@ -131,7 +131,7 @@ def init_flask():
             history.append({"content": prompt, "role": "user"})
             temperature = params.temperature
             aaa = ""
-            answer = glm4_9b_chat_ws(history, temperature)
+            answer = glm4_9b_chat_ws_common(history, temperature)
             for chunk in answer:
                 aaa += str(chunk.choices[0].delta.content)
                 print(aaa)
@@ -201,6 +201,9 @@ def init_flask():
             article_choices = params.article_choices
             ref_file = []
             #摘要
+            await manager.send_personal_message(json.dumps({
+                "title": article_base['标题']
+            }, ensure_ascii=False), websocket)
             summary = get_summary(article_base, list_to_query(article_choices))
             for chunk in summary["ai_say"]:
                 await manager.send_personal_message(json.dumps({
@@ -768,4 +771,4 @@ def init_flask():
 
 
 app = init_flask()
-uvicorn.run(app, host='0.0.0.0', port=8001, workers=1)
+uvicorn.run(app, host='0.0.0.0', port=8009, workers=1)

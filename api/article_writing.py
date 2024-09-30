@@ -237,10 +237,7 @@ def get_outline(query, temperature, filter_expr):
         {"content": prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)), "role": "user"}]
     ai_say = glm4_9b_chat_http(messages, temperature)
     print(extract_bracket_content(ai_say), rerank_filtered_result_file)
-    return {
-        'json': extract_bracket_content(ai_say),
-        'ref_file': rerank_filtered_result_file
-    }
+    return extract_bracket_content(ai_say)
 
 
 def get_outline_by_shanhuyun(query, temperature, filter_expr):
@@ -249,10 +246,7 @@ def get_outline_by_shanhuyun(query, temperature, filter_expr):
         {"content": shanhuyun_prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)), "role": "user"}]
     ai_say = glm4_9b_chat_http(messages, temperature)
     print(extract_bracket_content(ai_say), rerank_filtered_result_file)
-    return {
-        'json': extract_bracket_content(ai_say),
-        'ref_file': rerank_filtered_result_file
-    }
+    return extract_bracket_content(ai_say)
 
 
 #获取摘要

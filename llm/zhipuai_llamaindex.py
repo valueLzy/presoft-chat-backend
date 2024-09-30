@@ -8,7 +8,7 @@ from llama_index.core.llms.callbacks import llm_completion_callback
 # 假设 zhipuai 库已经安装并且可以导入
 # 如果没有安装，可以使用 pip install zhipuai 进行安装
 
-client = ZhipuAI(api_key="214934a091823a0715e0bdad6a440446.fkq0vOohPB3nVBGX")  # 填写您自己的APIKey
+client = ZhipuAI(api_key="f9bb07bb045c3e1c033fb1fa532eadc7.WIW3tMk0zG0SCjym")  # 填写您自己的APIKey
 
 
 class BianCangLLM(CustomLLM):
