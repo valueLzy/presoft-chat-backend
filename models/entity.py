@@ -86,6 +86,7 @@ class KnowledgeQa(BaseModel):
     question: str
     userid: str
     knowledge_name: str
+    language: str
 
 
 class KnowledgeFile(BaseModel):
