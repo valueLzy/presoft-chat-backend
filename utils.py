@@ -165,7 +165,7 @@ def parse_file_pdf(bucket_name: str, file_name: str) -> list:
 
 
 def matching_milvus_paragraph(query, collection_name, matches_number):
-    ref = matching_paragraph(query, collection_name, 1000)
+    ref = matching_paragraph(query, collection_name, 400)
     filtered_results = []
     for result in ref:
         filtered_result = [res.entity.text for res in result if res.score > 0]

@@ -207,7 +207,7 @@ shanhuyun_body_prompt = '''
 '''
 
 def get_ref(query, filter_expr):
-    ref = matching_paragraph_lunwen(query, 'damage_explosion_v2', 1000, filter_expr)
+    ref = matching_paragraph_lunwen(query, 'damage_explosion_v2', 100, filter_expr)
     filtered_results = []
     for result in ref:
         filtered_result = [res.entity.text for res in result if res.score > 0]

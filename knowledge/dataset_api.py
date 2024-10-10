@@ -193,7 +193,7 @@ if __name__ == '__main__':
     ファイル管理
     '''
 
-    res = matching_paragraph(query, 'open_project', 1000)
+    res = matching_paragraph(query, 'open_project', 400)
     filtered_results = []
     for result in res:
         filtered_result = [res.entity.text for res in result if res.score > 0]

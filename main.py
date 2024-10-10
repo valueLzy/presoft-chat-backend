@@ -150,7 +150,7 @@ def init_flask():
             answer = glm4_9b_chat_ws_common(history, temperature)
             for chunk in answer:
                 aaa += str(chunk.choices[0].delta.content)
-                print(aaa)
+                print(chunk.choices[0].delta.content, end="")
                 await manager.send_personal_message(json.dumps({
                     "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
@@ -376,13 +376,14 @@ def init_flask():
                         aisay_value = ai_value.replace("\n", "")
                         text_array[index] = ai_value  # 替换原始文本数组中的值
                         await manager.send_personal_message(json.dumps({
-                            "content": f'''修正：- **修正前**: {aisay_item}
-                               - **修正後**: {aisay_value}
+                            "content": f'''修正：
+                            - **修正前**: {aisay_item}
+                            - **修正後**: {aisay_value}
                            '''
                         }, ensure_ascii=False), websocket)
-                        insert_history_qa(v1, "日语修正-txt", f'''
-                              修正：- **修正前**: {aisay_item}
-                               - **修正後**: {aisay_value}''', "revise")
+                        insert_history_qa(v1, "日语修正-txt", f'''修正：
+                            - **修正前**: {aisay_item}
+                            - **修正後**: {aisay_value}''', "revise")
                 # 将修改后的文本数组重新组合成字符串
                 new_text = '\n\n'.join(text_array)
                 # 指定一个绝对路径
@@ -400,14 +401,14 @@ def init_flask():
                         aisay_value = ai_value.replace("\n", "")
                         replacements[item] = ai_value
                         await manager.send_personal_message(json.dumps({
-                            "content": f'''
-                          修正：- **修正前**: {aisay_item}
+                            "content": f'''修正：
+                            - **修正前**: {aisay_item}
                             - **修正後**: {aisay_value}
                         '''
                         }, ensure_ascii=False), websocket)
-                        insert_history_qa(v1, "日语修正-word", f'''
-                            修正：- **修正前**: {aisay_item}
-                            - **修正後**: {aisay_value}
+                        insert_history_qa(v1, "日语修正-word", f'''修正：
+                        - **修正前**: {aisay_item}
+                        - **修正後**: {aisay_value}
                         ''', "revise")
                         replace_text_in_docx(file_path, replacements, new_file_path)
                 else:
@@ -463,12 +464,16 @@ def init_flask():
     async def file_chat_qa(websocket: WebSocket, v1: str):
         manager = ConnectionManager()
         await manager.connect(websocket)
+
         try:
             data = await websocket.receive_text()
             params = Filechat2.parse_raw(data)
             question = params.question
+            language = params.language
+            question = f'''{question}。请默认用{language}回答问题。'''
             with open("filechat_index.pkl", "rb") as f:
                 filechat_index = pickle.load(f)
+
             query_engine = filechat_index.as_query_engine(include_text=True,
                                                           response_mode="tree_summarize",
                                                           embedding_mode="hybrid",
@@ -584,6 +589,7 @@ def init_flask():
             history = params.history
             question = params.question
             knowledge_name = params.knowledge_name
+            language = params.language
             user_id = params.userid
             ai_say = ""
             # if knowledge_name == "xiyouji_1":
@@ -603,7 +609,7 @@ def init_flask():
             #         }, ensure_ascii=False), websocket)
             # else:
             res = matching_milvus_paragraph(question, knowledge_name, 3)
-            messages = {"content": file_chat_prompt.format(question=question, content=str(res), language='中文'),
+            messages = {"content": file_chat_prompt.format(question=question, content=str(res), language=language),
                         "role": "user"}
             history.append(messages)
             answer = glm4_9b_chat_ws(history, 0.1)
