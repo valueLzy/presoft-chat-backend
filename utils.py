@@ -22,6 +22,7 @@ minio_client = Minio(
 )
 
 
+
 def md5_encrypt(password):
     # 创建一个md5哈希对象
     md5 = hashlib.md5()

@@ -266,7 +266,6 @@ def init_flask():
             await manager.send_personal_message(json.dumps({
                 "yinyong": ref_file
             }, ensure_ascii=False), websocket)
-
         except Exception as e:
             print(e)
         finally:
@@ -285,9 +284,12 @@ def init_flask():
             revise_text = revise_article(oldpart, prompt)
             for chunk in revise_text:
                 await manager.send_personal_message(json.dumps({
-                    "newpart": chunk.choices[0].delta.content
+                    "answer": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
-
+                print(chunk.choices[0].delta.content, end="")
+            await manager.send_personal_message(json.dumps({
+                "answer": 'stop_finished'
+            }, ensure_ascii=False), websocket)
         except Exception as e:
             print(e)
         finally:
