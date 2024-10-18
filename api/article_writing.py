@@ -151,7 +151,7 @@ article_prompt = '''
 论文大纲：{{outline}}
 '''
 body_prompt = '''
-你是论文撰写专家（善于用数学公式以及表格辅助说明），我将提供给你参考资料，论文大纲以及需要你编写的小节部分。
+你是论文撰写专家（善于用数学公式辅助说明），我将提供给你参考资料，论文大纲以及需要你编写的小节部分。
 你需要做的是阅读并理解这些内容，然后根据我的要求，帮助我生成小节的内容。
 
 要求：
@@ -171,20 +171,19 @@ body_prompt = '''
 论文大纲：{{outline}}
 '''
 revise_prompt = '''
-你是论文撰写专家，我将提供给你一个需要修改的论文正文片段，请你根据我的要求进行修改。
+你是论文撰写专家，我将提供给你一个需要修改的论文片段，请你根据我的追加要求对论文片段进行修改。
 
 默认要求：
-        1. 请不要在内容中参杂标题，全写正文。
+        1. 请不要在内容中参杂标题。
         2. 不需要多余的解释。
-        3. 小节内容要丰富。
-        4. 所有的数学公式请用 LaTeX 语法来展示，例如：$$ E = mc^2 $$。
-        5. 不得少于500字。
+        3. 所有的数学公式请用 LaTeX 语法来展示，例如：$$ E = mc^2 $$。
+        4. 直接返回修改后的论文片段。
 
+论文片段：
+        {{content}}
+        
 追加要求：
         {{query}}
-
-论文正文片段：
-        {{content}}
 '''
 shanhuyun_body_prompt = '''
 你是科技研究报告撰写专家（善于用数学公式以及表格辅助说明），我将提供给你参考资料，大纲以及需要你编写的小节部分。
@@ -205,6 +204,7 @@ shanhuyun_body_prompt = '''
 
 论文大纲：{{outline}}
 '''
+
 
 def get_ref(query, filter_expr):
     ref = matching_paragraph_lunwen(query, 'damage_explosion_v2', 100, filter_expr)
@@ -243,7 +243,8 @@ def get_outline(query, temperature, filter_expr):
 def get_outline_by_shanhuyun(query, temperature, filter_expr):
     rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr)
     messages = [
-        {"content": shanhuyun_prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)), "role": "user"}]
+        {"content": shanhuyun_prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)),
+         "role": "user"}]
     ai_say = glm4_9b_chat_http(messages, temperature)
     print(extract_bracket_content(ai_say), rerank_filtered_result_file)
     return extract_bracket_content(ai_say)
@@ -320,6 +321,7 @@ def get_body(outline, type, filter_expr):
         'ref_file': rerank_filtered_result_file
     }
 
+
 #分小节获取正文
 def shanhuyun_get_body(outline, type, filter_expr):
     abstract_ref, rerank_filtered_result_file = get_ref(type, filter_expr)
@@ -335,6 +337,7 @@ def shanhuyun_get_body(outline, type, filter_expr):
         'ai_say': ai_say,
         'ref_file': rerank_filtered_result_file
     }
+
 
 def list_to_query(lst):
     query = ' or '.join([f"type == '{item}'" for item in lst])
@@ -357,7 +360,7 @@ def list_to_query(lst):
 
 #修改论文-修改片段
 def revise_article(content, query):
-    messages = [{"content": revise_prompt.replace("{{query}}", query).replace(
-        "{{content}}", content), "role": "user"}]
+    messages = [{"content": revise_prompt.replace("{{query}}", content).replace(
+        "{{content}}", query), "role": "user"}]
     ai_say = deepseek_chat(1.25, messages)
     return ai_say

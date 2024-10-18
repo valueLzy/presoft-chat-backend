@@ -92,7 +92,7 @@ def init_flask():
         user_password = md5_encrypt(user.password)
         # 判断用户名是否存在
         if check_username_exists(user_id):
-            return JSONResponse(status_code=501, content={"message": "用户名存在"})
+            return JSONResponse(status_code=200, content={"message": "用户名存在"})
         else:
             insert_user(user_id, user_name, '用户', '1,2,3,4,5', '', user_password, user.email,
                         user.iphone)
@@ -104,7 +104,10 @@ def init_flask():
         try:
             user_id = user.userid
             user_name = user.username
-            user_password = md5_encrypt(user.password)
+            if user.password == '':
+                user_password = ''
+            else:
+                user_password = md5_encrypt(user.password)
             update_user(user_id, user_name, user_password, user.email, user.iphone)
             return JSONResponse(status_code=200, content={"message": "success"})
         except Exception as e:
