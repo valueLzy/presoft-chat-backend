@@ -3,14 +3,15 @@ from llm.embeddings import rerank
 from llm.glm4 import glm4_9b_chat_ws, glm4_9b_chat_http, deepseek_chat
 
 shanhuyun_prompt = '''
-请你根据用户的要求，以及参考资料帮我生成一篇中文科技研究报告大纲，最后以严格的json格式返回(不要丢失括号)，不需要解释，大标题和小标题都要有序号，大标题需要用大写序号。
+请你根据用户的要求，以及参考资料帮我生成一篇中文十万字正文的博士论文大纲，内容里面要有概述，不要只写几个字,最后以严格的json格式返回(不要丢失括号)，不需要解释，大标题和小标题都要有序号，大标题需要用大写序号。
 用户要求：{{query}}
 参考资料：{{ref}}
 
 json格式要求：
 {
   "标题": "",
-  "摘要": "",
+  "摘要": "xxx,xxx,xxx,xxx",
+  "关键词": "",
   "正文": [
     {
       "标题": "第一章 研究背景及现状",
@@ -186,14 +187,14 @@ revise_prompt = '''
         {{query}}
 '''
 shanhuyun_body_prompt = '''
-你是科技研究报告撰写专家（善于用数学公式以及表格辅助说明），我将提供给你参考资料，大纲以及需要你编写的小节部分。
+你是科技研究报告撰写专家（善于用数学公式辅助说明），我将提供给你参考资料，大纲以及需要你编写的小节部分。
 你需要做的是阅读并理解这些内容，然后根据我的要求，帮助我生成小节的内容。
 
 要求：
     1. 请不要在内容中参杂标题，全写正文。
     2. 不需要多余的解释。
     3. 小节内容要丰富。
-    4. 不得少于500字。
+    4. 不得少于3000字。
     5. 在小节最后不需要你总结。
     6. 请不要在正文中添加引用。
 
@@ -206,8 +207,8 @@ shanhuyun_body_prompt = '''
 '''
 
 
-def get_ref(query, filter_expr):
-    ref = matching_paragraph_lunwen(query, 'damage_explosion_v2', 100, filter_expr)
+def get_ref(query, filter_expr, milvus_name):
+    ref = matching_paragraph_lunwen(query, milvus_name, 100, filter_expr)
     filtered_results = []
     for result in ref:
         filtered_result = [res.entity.text for res in result if res.score > 0]
@@ -232,7 +233,7 @@ def extract_bracket_content(s):
 
 #标题获取大纲
 def get_outline(query, temperature, filter_expr):
-    rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr)
+    rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr,"damage_explosion_v2")
     messages = [
         {"content": prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)), "role": "user"}]
     ai_say = glm4_9b_chat_http(messages, temperature)
@@ -241,7 +242,7 @@ def get_outline(query, temperature, filter_expr):
 
 
 def get_outline_by_shanhuyun(query, temperature, filter_expr):
-    rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr)
+    rerank_filtered_result, rerank_filtered_result_file = get_ref(query, filter_expr,"jianting")
     messages = [
         {"content": shanhuyun_prompt.replace("{{query}}", query).replace("{{ref}}", str(rerank_filtered_result)),
          "role": "user"}]
@@ -253,7 +254,7 @@ def get_outline_by_shanhuyun(query, temperature, filter_expr):
 #获取摘要
 def get_summary(outline, filter_expr):
     abstract = outline['摘要']
-    abstract_ref, rerank_filtered_result_file = get_ref(abstract, filter_expr)
+    abstract_ref, rerank_filtered_result_file = get_ref(abstract, filter_expr, "damage_explosion_v2")
     abstract_ref_str = ''
     for item in abstract_ref:
         abstract_ref_str += item + "\n"
@@ -307,7 +308,7 @@ def extract_content_from_json(json_object):
 
 #分小节获取正文
 def get_body(outline, type, filter_expr):
-    abstract_ref, rerank_filtered_result_file = get_ref(type, filter_expr)
+    abstract_ref, rerank_filtered_result_file = get_ref(type, filter_expr,"damage_explosion_v2")
     abstract_ref_str = ''
     for item in abstract_ref:
         abstract_ref_str += item + "\n"
@@ -324,7 +325,7 @@ def get_body(outline, type, filter_expr):
 
 #分小节获取正文
 def shanhuyun_get_body(outline, type, filter_expr):
-    abstract_ref, rerank_filtered_result_file = get_ref(type, filter_expr)
+    abstract_ref, rerank_filtered_result_file = get_ref(type, filter_expr,"jianting")
     abstract_ref_str = ''
     for item in abstract_ref:
         abstract_ref_str += item + "\n"

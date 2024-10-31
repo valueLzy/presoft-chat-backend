@@ -182,6 +182,22 @@ def init_flask():
                 status_code=500
             )
 
+    # 论文---获取关键词
+    @app.post("/api/write/get_keywords_shunhuyun")
+    def get_write_keywords_shanhuyun():
+        try:
+            res = get_unique_field_values("jianting", "type")
+            keywords_list = [{"name": item, "checked": False} for item in res]
+            return ResponseEntity(
+                message=keywords_list,
+                status_code=200
+            )
+        except Exception as e:
+            return ResponseEntity(
+                message=str(e),
+                status_code=500
+            )
+
     # 论文---生成大纲
     @app.post("/api/write/get_basic")
     def get_basic(basic: Basic):
@@ -374,6 +390,7 @@ def init_flask():
                 with open(file_path, 'r', encoding='utf-8') as file:
                     text = file.read()
                 text_array = text.split("\n\n")
+                text_array = [item for item in text_array if item.strip()]
                 for index, item in enumerate(text_array):
                     if has_japanese(item):
                         ai_value = del_japanese_prompt(0.1, item, [])
@@ -392,7 +409,7 @@ def init_flask():
                 # 将修改后的文本数组重新组合成字符串
                 new_text = '\n\n'.join(text_array)
                 # 指定一个绝对路径
-                output_path = f'./data/new_{file_dir}.{file_type}'
+                output_path = new_file_path
                 # 创建一个txt文件，写入new_text
                 with open(output_path, 'w', encoding='utf-8') as output_file:
                     output_file.write(new_text)
@@ -405,16 +422,21 @@ def init_flask():
                         aisay_item = item.replace("\n", "")
                         aisay_value = ai_value.replace("\n", "")
                         replacements[item] = ai_value
-                        await manager.send_personal_message(json.dumps({
-                            "content": f'''修正：
+                        if len(aisay_item) > 5:
+                            await manager.send_personal_message(json.dumps({
+                                "content": f'''修正：
+                                - **修正前**: {aisay_item}
+                                - **修正後**: {aisay_value}
+                            '''
+                            }, ensure_ascii=False), websocket)
+                            insert_history_qa(v1, "日语修正-word", f'''修正：
                             - **修正前**: {aisay_item}
                             - **修正後**: {aisay_value}
-                        '''
-                        }, ensure_ascii=False), websocket)
-                        insert_history_qa(v1, "日语修正-word", f'''修正：
-                        - **修正前**: {aisay_item}
-                        - **修正後**: {aisay_value}
-                        ''', "revise")
+                            ''', "revise")
+                        for key in list(
+                                replacements.keys()):  # Using list to avoid runtime error due to dictionary size change
+                            if len(key) < 5:
+                                replacements[key] = ""
                         replace_text_in_docx(file_path, replacements, new_file_path)
                 else:
                     await manager.send_personal_message(json.dumps({
@@ -746,11 +768,16 @@ def init_flask():
             }, ensure_ascii=False), websocket)
             #摘要
             summary = get_summary(article_base, list_to_query(article_choices))
+            #关键字
+            keywords = get_keywords(article_base)
             for chunk in summary["ai_say"]:
                 print(chunk.choices[0].delta.content, end='')
                 await manager.send_personal_message(json.dumps({
                     "summary": chunk.choices[0].delta.content
                 }, ensure_ascii=False), websocket)
+            await manager.send_personal_message(json.dumps({
+                "keywords": keywords
+            }, ensure_ascii=False), websocket)
             # 正文
             json_list = extract_content_from_json(article_base)
             for index, item in enumerate(json_list):
@@ -794,6 +821,7 @@ def init_flask():
             print(e)
         finally:
             manager.disconnect(websocket)
+
     return app
 
 
